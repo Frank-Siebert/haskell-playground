@@ -1,0 +1,124 @@
+The current supply system is single-source-multi-target, that is it routes all supply on the shortest route to the supply center. I present a better system that uses true multi-source-multi-target and considers alternate routes once the shortest route is congested. I implemented my algorithm as a proof-of-concept and it's performance is good - below 0.2 seconds per day.
+
+[size=4][b][u] introduction [/u][/b][/size]
+I am unhappy with the the current supply system and always thought it could be better. Regarding the question why it is like it is, I remember a commentary from an official like "Not enough resources in manpower and computing, too much strain on hardware". I did not believe computing power is the limitation, so I tried to find a better solution. I think I found one that is better and still fast enough. But first a look at the current system.
+
+This article/post is not as polished as I wanted it to be, send suggestions for improvements (spelling, grammar, contents) via personal message. I suck at writing, but already delayed it for more than a month and it won't get better if I revisit it every two weeks.
+
+[size=4][b][u] current system [/u][/b][/size]
+The only limitation in the logistics system is infra throughput. (Not enough production is not a logistics problem.) There is no transport capacity like in HoI2.
+
+According to my tests, maximum throughput is
+ 4 * (1 + modifiers) * OAC * infra²
+Where OAC is 2 if the province is Owned And Controlled by the same nation, otherwise 1. Modifiers are given by ministers, technology and strategic effects. This was tested in a "linear" situation, that is a non-branching path of provinces.
+Maybe this limit is averaged over 2 days, but I am not sure about this.
+
+It is unknown to me what happens when paths branch and merge. I could not figure it out.
+
+[size=3][b][u] Current routing algorithm [/u][/b][/size]
+So far only the constraints were discussed, not the actual routing algorithm. Some people call that routing AI, but that is not right. The current routing algorithm is described in [url=http://forum.paradoxplaza.com/forum/showthread.php?477528-Supply-Guide]this post[/url]: For every supply need, the shortest path to the supply center of that landmass is chosen. Along that path the need is propagated back to the source. The Propagation it capped at twice the maximum throughput.
+
+[size=3][b][u] Current routing algorithm problems [/u][/b][/size]
+The routing described in the last section has serious problems:
+* All (well, most) supplies take the same road. For Germany during the soviet invasion, this can be some provinces south of the Pripjet marshes.
+* If a units moves perpendicular to the route to supply source, the system is especially bad: all supplies along the old path are sent back to the source while there is a new path built up. (Todo: figure?)
+* Further criticism is once it breaks, it does so in a non-transparent way and to my observations, once it breaks, waiting does not help. You will not get a message like "supply capacity along this route running at 98% capacity", which could be really helpful.
+
+[size=3][b][u] Complexity [/u][/b][/size]
+Some people say, the routing algorithm cannot do better because of the traveling salesman problem. This argument is invalid: There is no *single* huge train that supplies all units in *one* round-trip.
+
+[size=4][b][u] objectives [/u][/b][/size]
+Free your mind about the current supply system (the current routing algorithm). What should be objectives of supply routing?
+# Minimize supply in transit
+# Minimize transfer cost
+# [b]Keep all units in Supply[/b]
+The current algorithm, honestly, fails at the most import issue.
+
+We shall not forget the Game-wise objectives: create some logistics pain in Russia for Germany, in China for Japan and for US while liberating France.
+
+[size=4][b][u] My system [/u][/b][/size]
+I've implemented a routing algorithm that is better. Primarily it based on the max flow problem, which is described in [url=http://en.wikipedia.org/wiki/Maxflow]Wikipedia[/url] and [url=http://forum.paradoxplaza.com/forum/showthread.php?t=497658]by myself in the forum[/url].
+
+The rest of this section is about the difference between supply and maxflow and how I overcame it. Readers can safely skip this section and continue with "tests / my performance".
+
+The Max flow problem is different from supply routing, because it does not allow to store supplies in provinces and moves instantly (it is, as the name suggests, about a flow). To overcome this, my routing works in several phases, in two of which a max flow algorithm is used. (First all needs per province are added. This already happens in the current system.)
+
+[size=3][b][u] Routing from primary sources to primary consumers (units) [/u][/b][/size]
+Visualize phase 1 as "digging a (empty) riverbed and flowing all water within".
+In a first max flow call, I route from primary sources (factories) to primary consumers (units). This phase is just about where production and consumption happens and it is not influenced by supply already on the map. This first flow can be understood as the optimal routing. But if there are not enough resources along these paths, further work is necessary.
+
+In the next step I try to execute the flow. Whenever there should be a flow from province A to B, I check if there is enough supply at A. If yes, it moved, if no, it is marked for the the province as a deficit.
+
+[size=3][b][u] Routing unmoved surplus to unsatisfied path in phase 1 [/u][/b][/size]
+In the riverbed analogy, now all floods flow to the riverbed where it is dry.
+In the second phase, all unmoved supply from phase 1 is routed to all marked deficits from phase 1.
+If this flow cannot be executed, well, it is marked as "on the way" to avoid "overshooting". Overshooting means here: Requesting to much, later getting too much.
+
+Further details later or see the code.
+
+[size=3][b][u] Maxflow efficiency [/u][/b][/size]
+To solve the Max flow problem, several algorithms exist [url=http://en.wikipedia.org/wiki/Maxflow#Solutions](wikipedia)[/url]. There are more than in this Wikipedia list. I implemented several and Cherkassy's variant of Dinic's algorithm turned out to be the fastest.
+
+[size=3][b][u] where my system is incomplete [/u][/b][/size]
+# low infra provinces are further away in HoI, but not with my system.
+# limits are at province borders, not in provinces themselves
+# convoys extensively used. Very easy to make convoy need proportional to supply moved and take convoy limit into account. convoy need should be length*amount, the length thing may be tricky. Current system is wrong there, too, isn't it?
+# No supply tax.
+
+I did not address these problems because
+* solution (for 1,2) is not too difficult
+* solution will make my solution either slower or the source code will be much harder to read (limit in provinces)
+* Why should I? It's not like I am getting paid and I don't have too much hope I will get much feedback, let alone from Paradox.
+* Rebalancing is needed anyway. After all, supply can be a stopper of an offensive.
+* Supply tax needs a rework anyway because my system uses parallel routes. The current system is far from reality anyway: It takes the same absolute amount of supply whether you move 0.5 or 2000 supplies.
+
+[size=4][b][u] tests / my performance [/u][/b][/size]
+My routing algorithm is slow at start, because phase 2 takes long: my system routes differently. It converges into my routes after about 50 days. I checked all scenarios and savesames for performance. After those 50 days it takes 0.3s per day for a fresh 1936 scenario, 0.5s for my worst savegame. Update: compiling a release version with compiler optimization it needs 16s for 100 iterations. For comparision, running a fresh game from January 9th '36 to Jan 29th on the highest speed setting takes 45s on my machine. Compare my worst case of 0.16s per day to the best case of game performance at 2s per day and the slowdown is below 10%.
+
+[size=3][b][u] Download [/u][/b][/size]
+At  [url=http://games.genialitaet.de/BrainsOfUran_r30.7z]this link[/url] you find the program including sources.
+The executable is at
+<code>BrainsOfUran\BrainsOfUran\bin\Debug\BrainsOfUran.exe</code>
+or
+<code>BrainsOfUran\BrainsOfUran\bin\Release\BrainsOfUran.exe</code>.
+The release version uses compiler optimization and is faster, but might provide fewer information in case of an error.
+
+I used C# with Visual Studio 2005. VS2005 means no LINQ.
+Newer Versions of Visual Studio are downward-compatible, so there is no problem for users of newer versions.
+
+[size=3][b][u] Usage of my program [/u][/b][/size]
+The program grew bigger and bigger. Initially it was just to test how many different colors are used in provinces.bmp. Yes, every province has a unique color. So it is not an example of user friendly and that's not my goal. The program is just a proof-of-concept.
+
+Press "Load", select a save game.
+(If you want to load another save game, quit and restart the program.)
+You can click on the message in the status bar for the output window. The Message is initially just a "-". The output window is important for time measures and other messages.
+Click "Extras/test ParadoxFile" to execute my flow algorithm for one day. The first few runs are slow, because my system routes differently than the current system. To execute the flow algo for more than one day, enter a number into the "network nation" textbox, e.g. overwrite the * by a 30, then choose Extras/tstPdox once again to make it converge into different paths and choose Extras/tstPdox once again for another 30 runs. These performance of later runs is of interest, this is where my system converges to.
+
+The menu items "CreateNetwork" and "FlowAlgo" are largely obsolete, better don't touch as the program may crash if buttons aren't pressed in a particular order.
+
+[size=3][b][u] Compatibility [/u][/b][/size]
+I tested my program with HoI3 vanilla 1.4, HoI3+SF 2.02, and both 2.03 and 2.04 with DDay's ICE mod. Supply calculations are not correct: Neither logistic wizards nor army group reductions are taken into account.
+
+[size=3][b][u] About using more than one CPU [/u][/b][/size]
+The solution as I use it now uses one processor, no multithreading.
+While the performance is fine without, it offers a chance to use a second CPU. The calculation is independent of anything else. Simply copy the data needed for my algorithm at 01:00 game time every morning and execute the result 23h game hours later. Units might have moved in that time, but logistics lagging 1 day behind seems quite reasonable for the 1940s.
+
+[size=4][b][u] Wishlist [/u][/b][/size]
+Some new (or old) ideas are possible with this system.
+
+[size=3][b][u] Depots at HQs [/u][/b][/size]
+An old idea is to store supply at HQs. My system should be able to have non-strict depots at HQs. Non-strict means here that supply is not necessarily routed from via army HQ and Korps-HQ. Those HQs just become (secondary?) supply consumers / producers. Maybe a a third phase is necessary, and I don't know about the performance effect, but it is definitely worth a look. 
+
+[size=3][b][u] supply draw during combat and non-combat [/u][/b][/size]
+While we are at it, there is something that makes rocket artillery useless: It has higher consumption than normal artillery when it is not fighting, even at peace. A solution would be to differentiate consumption in non-combat and combat consumption.
+
+[size=3][b][u] 30 days stockpile [/u][/b][/size]
+I think a 30 days stockpile is way too high. A division might survive 30 days without supplies by rationing, but 30 days are unrealistic. Paradox probably used 30 days because of the perpendicular movement problem described earlier: Units take their 30 day supply with them with helps to bridge the time until a new supply line is built up. When there are depots at HQs (see above), 30 days are not necessary.
+
+[size=4][b][u] Conclusion [/u][/b][/size]
+Are there situations where my algorithm takes too long? Savegames, please!
+
+Any verification or falsification of my system?
+
+[size=3][b][u] Perspective [/u][/b][/size]
+In case the supply system is actually touched, one should go further and change the convoy system. Sub warfare is a poor feature in HoI, IMHO because those convoys are invisible. Visible (for their owners) convoys might be more micromanagement, but that is completely realistic, British Naval Office (forgot the real name) did make mistakes and sometimes sent merchants directly to the German subs. But this is beyond the scope of this post.
