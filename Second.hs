@@ -3,8 +3,8 @@
 import Data.Int (Int32)
 import Data.List (tails,sort,group)
 import Hashable
-import Maybe (fromJust)
-import Monad (liftM)
+import Data.Maybe (fromJust)
+import Control.Monad (liftM)
 
 ld :: (Eq a) => [a] -> [a] -> Int
 ld [] v = length v
