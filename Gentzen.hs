@@ -1,4 +1,3 @@
-import List
 import FsTree
 import Data.Function (on)
 

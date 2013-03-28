@@ -4,7 +4,8 @@ import Data.Array
 import Data.Char (ord)
 import Data.Int (Int32)
 import Data.List (tails)
-import Maybe (listToMaybe,fromJust)
+import Data.Maybe (listToMaybe)
+import Data.Maybe (fromJust)
 
 
 class (Eq a) => Hashable a where

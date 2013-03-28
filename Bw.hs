@@ -1,7 +1,7 @@
 -- Burrows-Wheeler.
 
-import List (sort,elemIndex,nub)
-import Maybe (fromJust)
+import Data.List (sort,elemIndex,nub)
+import Data.Maybe (fromJust)
 
 transform' :: (Ord x) => [x] -> ([x],Int)
 transform' x = let n = length x
