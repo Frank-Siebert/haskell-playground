@@ -1,2 +1,4 @@
-
-/.metadata
+*.hi
+*.o
+*.exe
+.metadata/
