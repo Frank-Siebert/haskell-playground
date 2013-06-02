@@ -42,5 +42,24 @@ main = do
 --        withHeader   = B.append (B.take 74 inp) $ B.append recompressed fourZeros;
 --    B.writeFile "E:\\Dokumente und Einstellungen\\Franky\\Eigene Dateien\\EugenSystems\\WarGame\\SavedGames\\defend_10_05_2013_008.repacked.wargamesav" withHeader
 
-         
-        
+data Timed a = Timed {curr :: a, prev :: a}
+
+type Predicate a = a -> Bool
+
+type TimeStrat = Bool -> Bool -> Bool
+
+is :: TimeStrat -> Predicate a -> Timed a -> Bool
+is ts pred timed = ts (pred . curr $ timed) (pred . prev $ timed)
+
+now :: TimeStrat
+now a _ = a
+
+before :: TimeStrat
+before _ b = b
+
+enter :: TimeStrat
+enter a b = a && not b
+
+media = Timed 10 1
+loading = (==) 10
+--is enter loading media
