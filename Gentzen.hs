@@ -1,5 +1,6 @@
 import FsTree
 import Data.Function (on)
+import Data.List (intersect, sortBy)
 
 --data (Eq vars, Show vars) => Expr vars = Var vars
 data Expr vars = Var vars
