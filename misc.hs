@@ -45,17 +45,17 @@ generatePw' dice pwd = let base = length (chars pwd) in
 						  else Password { pw = pw pwd, x = x pwd * chars pwd + dice, total = total pwd * inputmax }
 						  --}
 
-data State = State Int Int
-emit :: PasswordGen -> State -> (State, String)
-emit (PasswordGen chars sidedness) (State x total) = let len = length chars in if total >= len
-    then ((State (x-x `mod` len) (total `div` len)), [chars !! (x `mod` len)])
-    else ((State x total),"")
+data State = State Int Int String
+emit :: PasswordGen -> State -> State
+emit (PasswordGen chars sidedness) (State x total pw) = let len = length chars in if total >= len
+    then State (x-x `mod` len) (total `div` len) (chars !! (x `mod` len):pw)
+    else State x total pw
 
 inject :: PasswordGen -> Int -> State -> State
-inject (PasswordGen _ sidedness) y (State x total) = State (x*sidedness + y) (total*sidedness)
+inject (PasswordGen _ sidedness) y (State x total pw) = State (x*sidedness + y) (total*sidedness) pw
 
 genPw2 :: PasswordGen -> [Int] -> String
-genPw2 pwGen (d:ds) = let (_,pw) = emit pwGen $ inject pwGen d (State 0 1) in pw
+genPw2 pwGen (d:ds) = let (State _ _ pw) = emit pwGen $ inject pwGen d (State 0 1 "") in pw
 
 {-- State 0 1  >>(=) inject d
 --}
