@@ -47,9 +47,9 @@ generatePw' dice pwd = let base = length (chars pwd) in
 
 data State = State Int Int String
 emit :: PasswordGen -> State -> State
-emit pwg@(PasswordGen chars sidedness) (State x total pw) = let len = length chars in if total >= len
+emit pwg@(PasswordGen chars sidedness) state@(State x total pw) = let len = length chars in if total >= len
     then emit pwg $ State (x-x `mod` len) (total `div` len) (chars !! (x `mod` len):pw)
-    else State x total pw
+    else state
 
 inject :: PasswordGen -> Int -> State -> State
 inject (PasswordGen _ sidedness) y (State x total pw) = State (x*sidedness + y) (total*sidedness) pw
