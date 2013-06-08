@@ -56,7 +56,7 @@ inject (PasswordGen _ sidedness) y (State x total pw) = State (x*sidedness + y) 
 
 -- no use of this function!
 genPw2 :: PasswordGen -> [Int] -> String
-genPw2 pwGen (d:ds) = let (State _ _ pw) = emit pwGen $ inject pwGen d (State 0 1 "") in pw
+genPw2 pwGen ds = let (State _ _ pw) = foldr ((emit pwGen .) . inject pwGen) (State 0 1 "") ds in pw
 
 {-- State 0 1  >>(=) inject d
 --}
