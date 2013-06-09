@@ -26,11 +26,11 @@ makePW' = map toChars . toList charCount . fromList 6 . map (subtract 1)
 makePW :: Integer -> String
 makePW = makePW' . toList 10 
 
-data Password = Password { pw :: String, x :: Int, total :: Int }
+data Password = Password { pw :: String, x :: Int, total :: Int } deriving Show
 -- total is the number of possibilities for x, 0<=x<total, so init with 1
 --instance Monad Password where
 --    return
-data PasswordGen = PasswordGen { chars :: [Char], inputmax:: Int }
+data PasswordGen = PasswordGen { chars :: [Char], inputmax:: Int } deriving Show
 
 addDice :: Int -> PasswordGen -> Password -> Password
 addDice dice (PasswordGen chars inputmax) (Password pw x total) = Password pw (x*inputmax+dice) (total * inputmax)
@@ -45,7 +45,7 @@ generatePw' dice pwd = let base = length (chars pwd) in
 						  else Password { pw = pw pwd, x = x pwd * chars pwd + dice, total = total pwd * inputmax }
 						  --}
 
-data State = State Int Int String
+data State = State Int Int String deriving Show
 emit :: PasswordGen -> State -> State
 emit pwg@(PasswordGen chars sidedness) state@(State x total pw) = let len = length chars in if total >= len
     then emit pwg $ State (x `div` len) (total `div` len) (chars !! (x `mod` len):pw)
