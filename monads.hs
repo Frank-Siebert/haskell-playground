@@ -37,8 +37,8 @@ instance Monad Intree where
 data IIO a = IIO (IO a) a
 instance Monad (IIO) where
   return x = IIO (return x) x
-  (IIO io x) >>= f = let (IIO io' x') = f x in IIO (io >> putStrLn "interject"  >> io') x'
---(IIO io x) >>= f = let (IIO io' x') = f x in IIO (io >>= (\tmp -> putStrLn "interject" >> return tmp ) >>= io') x'
+--  (IIO io x) >>= f = let (IIO io' x') = f x in IIO (io >> putStrLn "interject"  >> io') x'
+  (IIO io x) >>= f = let (IIO io' x') = f x in IIO (io >>= (\tmp -> (putStrLn "interject" >> return tmp) ) >> io') x'
 
 runIIO (IIO io x) = io
 r :: IO () -> IIO ()
