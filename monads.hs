@@ -51,3 +51,24 @@ r io = IIO io ()
 -- works:
 -- runIIO $ IIO (putStrLn "1") () >> r (putStrLn "2") >> r (putStrLn "3")
 -- runIIO $ IIO (putStrLn "1") () >> return "Hallo" >>= r . putStrLn 
+
+data SIO b a = SIO0 a | SIOplain (a -> IO b) | SIOstored (IO b) (b -> SIO b a)
+--SIO1 (c->SIO a) (IO c) |SIO2 (SIO a) b (b -> IO c)
+
+{-
+instance Monad (SIO b) where
+  return = SIO0
+  SIO0 x >> next = next
+  SIO0 x >>= f = -}
+
+f15 :: (a -> IO b) -> SIO b a
+f15 f = SIOplain f
+
+-- a is the type of the final value, and will remain unchanged of course
+executeStep :: SIO b a -> IO (SIO b a)
+executeStep (SIO0 x) = putStrLn "final step, or do you want to loop forever?" >> return (SIO0 x)
+executeStep (SIOstored ioAction follow) = do v <- ioAction
+                                             return (SIOstored (return v) (follow))-- und was mit v?
+-- fehler hier: der letzte Wert, das innerste muss abgearbeitet werden, nicht von außen nach innen,
+-- was weniger garbage erzeugen würde.
+-- doch, müsste andersherum gehen, ich setze ja SIO zusammen.
