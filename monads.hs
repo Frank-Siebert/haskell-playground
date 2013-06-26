@@ -52,14 +52,17 @@ r io = IIO io ()
 -- runIIO $ IIO (putStrLn "1") () >> r (putStrLn "2") >> r (putStrLn "3")
 -- runIIO $ IIO (putStrLn "1") () >> return "Hallo" >>= r . putStrLn 
 
-data SIO b a = SIO0 a | SIOplain (a -> IO b) | SIOstored (IO b) (b -> SIO b a)
+-- a: final type. b: intermediate (monad) type?
+-- need three types for (a->b)->(b->c)->(a->c)
+data SIO a b = SIO0 b | SIOplain (b -> IO a) | SIOstored (IO b) (b -> SIO b a) | SIO1 b ( b-> SIO a b)
 --SIO1 (c->SIO a) (IO c) |SIO2 (SIO a) b (b -> IO c)
 
 {-
-instance Monad (SIO b) where
+instance Monad (SIO a) where
   return = SIO0
   SIO0 x >> next = next
-  SIO0 x >>= f = -}
+  SIO0 x >>= f = SIO1 x f
+-}
 
 f15 :: (a -> IO b) -> SIO b a
 f15 f = SIOplain f
@@ -72,3 +75,8 @@ executeStep (SIOstored ioAction follow) = do v <- ioAction
 -- fehler hier: der letzte Wert, das innerste muss abgearbeitet werden, nicht von außen nach innen,
 -- was weniger garbage erzeugen würde.
 -- doch, müsste andersherum gehen, ich setze ja SIO zusammen.
+
+-- what is this "->" in
+-- instance Monad (->) or something?
+type Function a b = a -> b
+-- a type constructor. -> is a type constructor
