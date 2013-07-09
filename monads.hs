@@ -52,26 +52,39 @@ r io = IIO io ()
 -- runIIO $ IIO (putStrLn "1") () >> r (putStrLn "2") >> r (putStrLn "3")
 -- runIIO $ IIO (putStrLn "1") () >> return "Hallo" >>= r . putStrLn 
 
--- a: final type. b: intermediate (monad) type?
--- need three types for (a->b)->(b->c)->(a->c)
-data SIO a b = SIO0 b | SIOplain (b -> IO a) | SIOstored (IO b) (b -> SIO b a) | SIO1 b ( b-> SIO a b)
---SIO1 (c->SIO a) (IO c) |SIO2 (SIO a) b (b -> IO c)
-
 {-
-instance Monad (SIO a) where
-  return = SIO0
-  SIO0 x >> next = next
-  SIO0 x >>= f = SIO1 x f
+Ego!
+
+Probier mal, ob ich mit
+
+IO (IO ()) oder sowas weiterkomme.
+
+Data Narf = Stop | Cont (IO ())
+
+IO (Narf) 
+
 -}
 
-f15 :: (a -> IO b) -> SIO b a
-f15 f = SIOplain f
+-- a: final type. b: intermediate (monad) type?
+-- need three types for (a->b)->(b->c)->(a->c)
+data SIO a = SIO0 a | SIO1 (IO a) (SIO a)
+
+ioOf:: SIO a -> IO a
+ioOf (SIO0 x) = error "no, last in line"
+ioOf (SIO1 x _) = x
+
+-- every SIO has Either a value t or an action IO t?
+
+instance Monad (SIO ) where
+  return = SIO0 . return
+  SIO0 x >> next = next
+  --SIO0 x >>= f = SIO1 x f
+  sio >>= f = SIO1 (ioOf . f $ sio)  sio
 
 -- a is the type of the final value, and will remain unchanged of course
-executeStep :: SIO b a -> IO (SIO b a)
-executeStep (SIO0 x) = putStrLn "final step, or do you want to loop forever?" >> return (SIO0 x)
-executeStep (SIOstored ioAction follow) = do v <- ioAction
-                                             return (SIOstored (return v) (follow))-- und was mit v?
+executeStep :: SIO a -> IO (SIO a)
+executeStep (SIO0 ioAction) = ioAction >>= return . return
+executeStep (SIO1 ioAction follow) = executeStep follow
 -- fehler hier: der letzte Wert, das innerste muss abgearbeitet werden, nicht von außen nach innen,
 -- was weniger garbage erzeugen würde.
 -- doch, müsste andersherum gehen, ich setze ja SIO zusammen.
@@ -80,3 +93,8 @@ executeStep (SIOstored ioAction follow) = do v <- ioAction
 -- instance Monad (->) or something?
 type Function a b = a -> b
 -- a type constructor. -> is a type constructor
+
+-- looks good, but what is the implementation?
+-- (>>>>) :: My a -> (a -> IO b) -> My b
+
+-- executeMyStep :: My a -> IO (My b) -- ????
