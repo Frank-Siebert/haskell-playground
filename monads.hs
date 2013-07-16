@@ -74,7 +74,7 @@ ioOf (SIO0 x) = error "no, last in line"
 ioOf (SIO1 x _) = x
 
 -- every SIO has Either a value t or an action IO t?
-
+{-
 instance Monad (SIO ) where
   return = SIO0 . return
   SIO0 x >> next = next
@@ -88,13 +88,34 @@ executeStep (SIO1 ioAction follow) = executeStep follow
 -- fehler hier: der letzte Wert, das innerste muss abgearbeitet werden, nicht von außen nach innen,
 -- was weniger garbage erzeugen würde.
 -- doch, müsste andersherum gehen, ich setze ja SIO zusammen.
-
 -- what is this "->" in
 -- instance Monad (->) or something?
 type Function a b = a -> b
 -- a type constructor. -> is a type constructor
-
+-}
 -- looks good, but what is the implementation?
--- (>>>>) :: My a -> (a -> IO b) -> My b
+--(>>>>) :: My a -> (a -> IO b) -> My b
+--my >>>> f = My (fmap My0 ( f . resultOf my))
 
--- executeMyStep :: My a -> IO (My b) -- ????
+resultOf:: My a -> a
+resultOf (My0 x) = x
+
+data My a = My (IO (My a)) | My0 a
+
+--lift :: IO a -> My a
+lift action = My (action >>= return . My0)
+
+
+instance Monad My where
+  return = My0
+  My0 x >>= f = f x
+  My action >>= f = My (do x <- action -- x::My a
+                           return (f x))
+
+
+executeMyStep :: My a -> IO (My a) -- ????
+executeMyStep (My x) = x
+
+io :: a -> IO a
+io = return
+
