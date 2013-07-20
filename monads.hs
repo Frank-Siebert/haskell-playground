@@ -52,19 +52,6 @@ r io = IIO io ()
 -- runIIO $ IIO (putStrLn "1") () >> r (putStrLn "2") >> r (putStrLn "3")
 -- runIIO $ IIO (putStrLn "1") () >> return "Hallo" >>= r . putStrLn 
 
-{-
-Ego!
-
-Probier mal, ob ich mit
-
-IO (IO ()) oder sowas weiterkomme.
-
-Data Narf = Stop | Cont (IO ())
-
-IO (Narf) 
-
--}
-
 -- a: final type. b: intermediate (monad) type?
 -- need three types for (a->b)->(b->c)->(a->c)
 data SIO a = SIO0 a | SIO1 (IO a) (SIO a)
@@ -93,9 +80,6 @@ executeStep (SIO1 ioAction follow) = executeStep follow
 type Function a b = a -> b
 -- a type constructor. -> is a type constructor
 -}
--- looks good, but what is the implementation?
---(>>>>) :: My a -> (a -> IO b) -> My b
---my >>>> f = My (fmap My0 ( f . resultOf my))
 
 resultOf:: My a -> a
 resultOf (My0 x) = x
@@ -110,7 +94,8 @@ instance Monad My where
   return = My0
   My0 x >>= f = f x
   My action >>= f = My (do x <- action -- x::My a
-                           return (f x))
+                           let (My0 x') = x
+                           io . f $ x')
 
 
 executeMyStep :: My a -> IO (My a) -- ????
@@ -118,4 +103,11 @@ executeMyStep (My x) = x
 
 io :: a -> IO a
 io = return
+
+steps = do My0 ()
+           lift $ print "Hallo"
+           lift $ print "World"
+
+-- executeMyStep steps >>= executeMyStep
+-- does what I expect!
 
