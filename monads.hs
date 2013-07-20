@@ -44,21 +44,21 @@ runIIO (IIO io x) = io
 r :: IO () -> IIO ()
 r io = IIO io ()
 
-data My a = My (IO (My a)) | My0 a
+data My m a = My (m (My m a)) | My0 a
 
-liftIO :: IO a -> My a
+liftIO :: IO a -> My IO a
 liftIO action = My (action >>= return . My0)
 
 
-instance Monad My where
+instance (Monad m) => Monad (My m) where
   return = My0
   My0 x >>= f = f x
   My action >>= f = My (do x <- action -- x::My a
                            let (My0 x') = x
-                           io . f $ x')
+                           return . f $ x')
 
 
-executeMyStep :: My a -> IO (My a) -- ????
+executeMyStep :: My m a -> m (My m a) -- ????
 executeMyStep (My x) = x
 
 io :: a -> IO a
@@ -74,9 +74,9 @@ steps2 = do My0 ()
 -- executeMyStep steps >>= executeMyStep
 -- does what I expect!
 
-executeStepwise:: [My ()] -> IO ()
+executeStepwise:: (Monad m) => [My m ()] -> m ()
 executeStepwise ms = executeStepwise' (ms,[]) >> return () where
-    executeStepwise' :: ([My ()], [My ()]) -> IO ([My ()], [My ()])
+    executeStepwise' :: (Monad m) => ([My m ()], [My m ()]) -> m ([My m ()], [My m ()])
     executeStepwise' ([],[]) = return ([],[])
     executeStepwise' ([], ms') = executeStepwise' (reverse ms',[])
     executeStepwise' ((My0 ()):ms, ms') = executeStepwise' (ms, ms')
@@ -85,5 +85,5 @@ executeStepwise ms = executeStepwise' (ms,[]) >> return () where
 -- todo: still swaps order, so we get 1, 1', 2', 2, 3, 3',...
 -- use something more elegant than reverse
 
-threads :: [My ()]
+threads :: [My IO ()]
 threads = [sequence_ [liftIO (putStrLn $ "Thread "++(c:" step "++ show n)) | n<-[1..4]] | c <- ['A'..'D']]
