@@ -1,3 +1,5 @@
+import Control.Monad.Trans (MonadTrans, lift, MonadIO)
+
 data Chain a = Chain String a deriving (Eq,Show)
 
 instance (Monad) (Chain) where
@@ -46,6 +48,12 @@ r io = IIO io ()
 
 data My m a = My (m (My m a)) | My0 a
 
+-- lift :: Monad m => m a -> t m a
+instance MonadTrans My where
+  lift z = My (z >>= return . My0)
+
+--instance (MonadIO m) => MonadIO (My m) where
+--  liftIO = lift . liftIO
 liftIO :: IO a -> My IO a
 liftIO action = My (action >>= return . My0)
 
