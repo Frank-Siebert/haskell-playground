@@ -44,50 +44,10 @@ runIIO (IIO io x) = io
 r :: IO () -> IIO ()
 r io = IIO io ()
 
---rf :: a -> (a -> IO b) -> IIO b
---rf x f = IIO (a >> 
-
-
--- works:
--- runIIO $ IIO (putStrLn "1") () >> r (putStrLn "2") >> r (putStrLn "3")
--- runIIO $ IIO (putStrLn "1") () >> return "Hallo" >>= r . putStrLn 
-
--- a: final type. b: intermediate (monad) type?
--- need three types for (a->b)->(b->c)->(a->c)
-data SIO a = SIO0 a | SIO1 (IO a) (SIO a)
-
-ioOf:: SIO a -> IO a
-ioOf (SIO0 x) = error "no, last in line"
-ioOf (SIO1 x _) = x
-
--- every SIO has Either a value t or an action IO t?
-{-
-instance Monad (SIO ) where
-  return = SIO0 . return
-  SIO0 x >> next = next
-  --SIO0 x >>= f = SIO1 x f
-  sio >>= f = SIO1 (ioOf . f $ sio)  sio
-
--- a is the type of the final value, and will remain unchanged of course
-executeStep :: SIO a -> IO (SIO a)
-executeStep (SIO0 ioAction) = ioAction >>= return . return
-executeStep (SIO1 ioAction follow) = executeStep follow
--- fehler hier: der letzte Wert, das innerste muss abgearbeitet werden, nicht von außen nach innen,
--- was weniger garbage erzeugen würde.
--- doch, müsste andersherum gehen, ich setze ja SIO zusammen.
--- what is this "->" in
--- instance Monad (->) or something?
-type Function a b = a -> b
--- a type constructor. -> is a type constructor
--}
-
-resultOf:: My a -> a
-resultOf (My0 x) = x
-
 data My a = My (IO (My a)) | My0 a
 
---lift :: IO a -> My a
-lift action = My (action >>= return . My0)
+liftIO :: IO a -> My a
+liftIO action = My (action >>= return . My0)
 
 
 instance Monad My where
@@ -105,11 +65,11 @@ io :: a -> IO a
 io = return
 
 steps = do My0 ()
-           lift $ print "Hallo"
-           lift $ print "World"
+           liftIO $ print "Hallo"
+           liftIO $ print "World"
 steps2 = do My0 ()
-            x <- lift $ getLine
-            lift $ putStrLn x
+            x <- liftIO $ getLine
+            liftIO $ putStrLn x
 
 -- executeMyStep steps >>= executeMyStep
 -- does what I expect!
@@ -126,4 +86,4 @@ executeStepwise ms = executeStepwise' (ms,[]) >> return () where
 -- use something more elegant than reverse
 
 threads :: [My ()]
-threads = [sequence_ [lift (putStrLn $ "Thread "++(c:" step "++ show n)) | n<-[1..4]] | c <- ['A'..'D']]
+threads = [sequence_ [liftIO (putStrLn $ "Thread "++(c:" step "++ show n)) | n<-[1..4]] | c <- ['A'..'D']]
