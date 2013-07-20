@@ -107,6 +107,9 @@ io = return
 steps = do My0 ()
            lift $ print "Hallo"
            lift $ print "World"
+steps2 = do My0 ()
+            x <- lift $ getLine
+            lift $ putStrLn x
 
 -- executeMyStep steps >>= executeMyStep
 -- does what I expect!
