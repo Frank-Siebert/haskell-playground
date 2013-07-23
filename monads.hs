@@ -88,8 +88,9 @@ executeStepwise ms = executeStepwise' (ms,[]) >> return () where
     executeStepwise' ([],[]) = return ([],[])
     executeStepwise' ([], ms') = executeStepwise' (reverse ms',[])
     executeStepwise' ((My0 ()):ms, ms') = executeStepwise' (ms, ms')
-    executeStepwise' (m:ms, ms') = (do m' <- executeMyStep m
-                                       executeStepwise' (ms, m':ms'))
+--    executeStepwise' (m:ms, ms') = (do m' <- executeMyStep m
+--                                       executeStepwise' (ms, m':ms'))
+    executeStepwise' (m:ms, ms') = executeMyStep m >>= executeStepwise' . (,) ms . (:ms')
 -- todo: still swaps order, so we get 1, 1', 2', 2, 3, 3',...
 -- use something more elegant than reverse
 
