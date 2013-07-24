@@ -61,9 +61,8 @@ liftIO action = My (action >>= return . My0)
 instance (Monad m) => Monad (My m) where
   return = My0
   My0 x >>= f = f x
-  My action >>= f = My (do x <- action -- x::My a
-                           let (My0 x') = x
-                           return . f $ x')
+  My action >>= f = My (do (My0 x) <- action
+                           return . f $ x)
 
 
 executeMyStep :: My m a -> m (My m a) -- ????
