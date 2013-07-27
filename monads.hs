@@ -61,8 +61,10 @@ liftIO action = My (action >>= return . My0)
 instance (Monad m) => Monad (My m) where
   return = My0
   My0 x >>= f = f x
-  My action >>= f = My (do (My0 x) <- action
-                           return . f $ x)
+  My action >>= f = My (do x <- action
+                           case x of 
+                              My0 x' -> return . f $ x'
+                              z -> return (z >>= f) )
 
 
 executeMyStep :: My m a -> m (My m a) -- ????
@@ -77,6 +79,8 @@ steps = do My0 ()
 steps2 = do My0 ()
             x <- liftIO $ getLine
             liftIO $ putStrLn x
+steps1 x = do My0 ()
+              liftIO $ print x
 
 -- executeMyStep steps >>= executeMyStep
 -- does what I expect!
