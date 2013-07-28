@@ -82,8 +82,15 @@ steps2 = do My0 ()
 steps1 x = do My0 ()
               liftIO $ print x
 
--- executeMyStep steps >>= executeMyStep
--- does what I expect!
+repeatM :: (Monad m) => Int -> (a -> m a) -> a -> m a
+repeatM 0 _ = return
+repeatM 1 f = f
+repeatM 2 f = (\x -> f x >>= f)
+repeatM n f = (\x -> f x >>= (repeatM (n-1) f))
+
+five'' = \x-> liftIO $ print x >> getLine >>= (\y -> return (x++y))
+five' = repeatM 5 five''
+five x = My0 x >>= five' >> (liftIO $ return ())
 
 executeStepwise:: (Monad m) => [My m ()] -> m ()
 executeStepwise ms = executeStepwise' (ms,[]) >> return () where
