@@ -28,11 +28,24 @@ maxSpeed :: Int
 maxSpeed = 5
 
 process :: [Cell] -> [Cell]
-process ls = take (length ls) $ process' ls ++ take maxSpeed (cycle ls) where
+process ls = encycle (length ls) $ process' (ls ++ take maxSpeed (cycle ls)) where
+  -- process' :: [Cell] -> [Cell] -> [Cell] -- on parameter infinite, the other one finite? TODO
   process' (Empty:ls)     = Empty : process' ls
   process' (Car speed:ls) = let freeRoad = count Empty ls
                                 newSpeed = minimum [speed+1,freeRoad,maxSpeed]
-                             in replicate newSpeed Empty ++ (Car newSpeed:drop newSpeed ls)
+                             in replicate newSpeed Empty ++ (Car newSpeed:process' (drop newSpeed ls))
+  process' [] = []
+  encycle n ls = adds (take n ls) (take n $ drop n ls)
+                             
+add :: Cell -> Cell -> Cell
+add Empty c = c
+add c Empty = c
+
+adds :: [Cell] -> [Cell] -> [Cell]
+adds [] [] = []
+adds l [] = l
+adds [] l = l
+adds (a:as) (b:bs) = (add a b):adds as bs
                                 
 
 --mpf :: StdGen
