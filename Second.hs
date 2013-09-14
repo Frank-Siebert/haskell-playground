@@ -131,3 +131,19 @@ wf3 :: b -> ( b-> Maybe (a,b) -> Maybe (a,b) -> b) -> [a] -> [a] -> b
 wf3 init f [] [] = init
 wf3 init f [] v:vs = f init (Just (v,(wf init f [] vs))) Nothing 
 -}
+charac :: (Eq a) => a -> a -> Int
+charac x y = if x == y then 0 else 1
+
+--ld0:: (Eq a) => [a] -> [a] -> Int
+ld0 x y = let ld0' res _ [] = res
+              ld0' (res) (x) (y:ys) = ld0' (ld0''' (res) x 666 y) x ys
+              ld0''' (i0:is) x pi c = i0 + 1 : ld0'' is x pi c
+              ld0'' [i0] [] pi _ = 1+ min i0 pi -- TODO reconsider.
+              ld0'' (i0:i1:is) (a:as) pi x = let min' = minimum [i1 + 1,i0 + charac a x,pi + 1]
+                                              in min' : ld0'' (i1:is) as min' x
+              ld0'' z1 z2 pi x = error $ "length z1 " ++ (show . length $ z1) ++ " length z2 " ++ (show . length $ z2) ++ " pi " ++ show pi ++ "char="++[x]
+           in ld0' [0..length x] x y
+
+ld0'' [i0] [] _ _ = [i0 + 1] -- TODO reconsider.
+ld0'' (i0:i1:is) (a:as) pi x = let min' = minimum [i1 + 1,i0 + charac a x,pi + 1]
+                              in min' : ld0'' (i1:is) as min' x
