@@ -1,4 +1,5 @@
 import Control.Monad.Trans (MonadTrans, lift, MonadIO)
+import Control.Monad (liftM2)
 
 data Chain a = Chain String a deriving (Eq,Show)
 
@@ -16,6 +17,8 @@ ps s = Chain s s
 pf :: (Show b) => (a -> b) -> a -> Chain b
 pf f x = let y = f x in Chain (show y) y
 
+cart :: (Monad m) => m a -> m b -> m (a,b)
+cart = liftM2 (,)
 
 init :: Chain ()
 init = Chain "" ()
