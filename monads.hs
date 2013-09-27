@@ -1,5 +1,6 @@
 import Control.Monad.Trans (MonadTrans, lift, MonadIO)
 import Control.Monad (liftM2)
+import Control.Applicative
 
 data Chain a = Chain String a deriving (Eq,Show)
 
@@ -7,6 +8,14 @@ instance (Monad) (Chain) where
    return x = Chain "" x
    Chain s x >>= f = let (Chain s' x') = (f x) in Chain (s++s') x'
    Chain s _ >> Chain s' x' = Chain (s++s') x'
+
+instance Applicative Chain where
+  pure = Chain ""
+  (Chain s f) <*> (Chain s' x) = Chain (s++s') (f x)
+
+if' :: Bool -> a -> a -> a
+if' True x _ = x
+if' False _ x = x
 
 pr :: (Show a) => a -> Chain a
 pr x = Chain (show x) x
