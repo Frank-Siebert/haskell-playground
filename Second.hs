@@ -106,7 +106,7 @@ main = do
          putStrLn "Enter two strings, separated by [return]"
          x <- getLine
          y <- getLine                             -- ld2 broken!
-         sequence_ [ time $ putStrLn ( show (ald x y)) | ald <-[ld0,ld3,ld,ld4,ld5,ld6]]
+         sequence_ [ time $ putStrLn ( show (ald x y)) | ald <-[ld3,ld,ld4,ld5,ld6]]
                                         
 output = zipWith (,) (ld4' "blah" "blub") (ld6' "blah" "blub")
 
@@ -141,20 +141,25 @@ wf3 init f [] v:vs = f init (Just (v,(wf init f [] vs))) Nothing
 charac :: (Eq a) => a -> a -> Int
 charac x y = if x == y then 0 else 1
 
---type LevenResult a = (Int, Alignment a)
-type LevenResult a = Int
+type LevenResult a = (Int, Alignment a)
+--type LevenResult a = Int
 
-ld0:: (Eq a) => [a] -> [a] -> LevenResult a
-ld0 x y = head . reverse $ reihe [0..length y] (length x) x y
+alignToEmpties :: [a] -> [LevenResult a]
+alignToEmpties x = map (\s -> (length s,reverse $ map (\z -> (Nothing, Just z)) s)) $reverse . tails $ x
 
-zeile :: (Eq a) => [LevenResult a] -> LevenResult a -> a -> [a] -> [LevenResult a]
+alignToEmpty2 x = map (\s -> (length s,reverse $ map (\z -> (Just z, Nothing)) s)) $reverse . tails $ x
+
+ld0:: (Eq a, Ord a ) => [a] -> [a] -> LevenResult a
+ld0 x y = (\(z,s) -> (z, reverse s)) . head . reverse $ reihe (alignToEmpties y) (alignToEmpty2 x) x y
+
+zeile :: (Eq a, Ord a) => [LevenResult a] -> LevenResult a -> a -> [a] -> [LevenResult a]
 zeile [u] left _ [] = [left]--[min (u+1) left]
-zeile (leftUp:up:ups) left c (y:ys) = let new = minimum [charac c y + leftUp, left+ 1,up+1]
+zeile (leftUp:up:ups) left c (y:ys) = let new = minimum_alignment leftUp left up c y
                                        in left:zeile (up:ups) new c ys
 
-reihe :: (Eq a) => [LevenResult a] -> LevenResult a -> [a] -> [a] -> [LevenResult a]
+reihe :: (Eq a,Ord a) => [LevenResult a] -> [LevenResult a] -> [a] -> [a] -> [LevenResult a]
 reihe ups _ [] _ = ups
-reihe ups z (x:xs) y = reihe (zeile ups z x y) z xs y
+reihe ups (z:zs) (x:xs) y = reihe (zeile ups z x y) zs xs y
 
 -- the "leftmost" row of the matrix is wrong for all but the last
 data Edit a = Same a | Replace a a | Insert a | Delete a
@@ -177,5 +182,5 @@ minimum_alignment ul le up x1 y1 = let narf (v, ament) a@(x,y) = (v + charac x y
                                                 narf up (Just x1, Nothing)]
 
 al :: String -> String -> IO ()
-al x y = let (value, a) = align x y
+al x y = let (value, a) = ld0 x y
           in putStrLn $ show value ++ toString a
