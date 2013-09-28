@@ -163,13 +163,13 @@ align :: (Eq a,Ord a) => [a] -> [a] -> (Int, Alignment a)
 align [] [] = (0, [])
 align [] y  = (length y, map (\z -> (Nothing, Just z)) y)
 align x  [] = (length x, map (\z -> (Just z, Nothing)) x)
-align x@(x1:xs) y@(y1:ys) = let (ul,ul_a) = align xs ys
-                                (le,le_a) = align x  ys
-                                (up,up_a) = align xs y
-                                ul' = (ul + charac x1 y1,(Just x1, Just y1):ul_a)
-                                le' = (le + 1           ,(Nothing, Just y1):le_a)
-                                up' = (up + 1           ,(Just x1, Nothing):up_a)
-                             in minimum [ul',le',up']
+align x@(x1:xs) y@(y1:ys) = minimum_alignment (align xs ys) (align x ys) (align xs y) x1 y1
+
+minimum_alignment :: (Eq a,Ord a) => (Int, Alignment a) -> (Int, Alignment a) -> (Int, Alignment a) -> a -> a -> (Int,Alignment a)
+minimum_alignment ul le up x1 y1 = let narf (v, ament) a@(x,y) = (v + charac x y, a:ament)
+                                    in minimum [narf ul (Just x1, Just y1),
+                                                narf le (Nothing, Just y1),
+                                                narf up (Just x1, Nothing)]
 
 al :: String -> String -> IO ()
 al x y = let (value, a) = align x y
