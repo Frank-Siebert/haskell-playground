@@ -154,6 +154,8 @@ reihe ups _ [] _ = ups
 reihe ups z (x:xs) y = reihe (zeile ups z x y) z xs y
 
 -- the "leftmost" row of the matrix is wrong for all but the last
+data Edit a = Same a | Replace a a | Insert a | Delete a
+-- what is the best way to display the changes? 3 line with center line one of '=', '/', 'v', '^'?
 
 type Alignment a = [(Maybe a,Maybe a)]
 toString :: Alignment Char -> String
