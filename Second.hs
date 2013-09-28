@@ -3,8 +3,18 @@
 import Data.Int (Int32)
 import Data.List (tails,sort,group)
 import Hashable
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust,fromMaybe)
 import Control.Monad (liftM)
+import System.CPUTime (getCPUTime)
+
+time :: IO t -> IO t
+time a = do
+    start <- getCPUTime
+    v <- a
+    end   <- getCPUTime
+    let diff = (fromIntegral (end - start)) / (10^12)
+    putStrLn $ "Computation time: " ++ (show diff)
+    return v
 
 ld :: (Eq a) => [a] -> [a] -> Int
 ld [] v = length v
@@ -93,13 +103,10 @@ ld6 x y = snd . last $ (ld6' x y)
 
 main :: IO ()
 main = do
+         putStrLn "Enter two strings, separated by [return]"
          x <- getLine
          y <- getLine                             -- ld2 broken!
-         seq_ [ putStrLn ( show (ald x y)) | ald <-[ld3,ld,ld4,ld5,ld6]]
-         return ()
-         
-seq_ :: [IO ()] -> IO ()
-seq_ = foldr (>>) (return ())
+         sequence_ [ time $ putStrLn ( show (ald x y)) | ald <-[ld0,ld3,ld,ld4,ld5,ld6]]
                                         
 output = zipWith (,) (ld4' "blah" "blub") (ld6' "blah" "blub")
 
@@ -134,16 +141,36 @@ wf3 init f [] v:vs = f init (Just (v,(wf init f [] vs))) Nothing
 charac :: (Eq a) => a -> a -> Int
 charac x y = if x == y then 0 else 1
 
---ld0:: (Eq a) => [a] -> [a] -> Int
-ld0 x y = let ld0' res _ [] = res
-              ld0' (res) (x) (y:ys) = ld0' (ld0''' (res) x 666 y) x ys
-              ld0''' (i0:is) x pi c = i0 + 1 : ld0'' is x pi c
-              ld0'' [i0] [] pi _ = 1+ min i0 pi -- TODO reconsider.
-              ld0'' (i0:i1:is) (a:as) pi x = let min' = minimum [i1 + 1,i0 + charac a x,pi + 1]
-                                              in min' : ld0'' (i1:is) as min' x
-              ld0'' z1 z2 pi x = error $ "length z1 " ++ (show . length $ z1) ++ " length z2 " ++ (show . length $ z2) ++ " pi " ++ show pi ++ "char="++[x]
-           in ld0' [0..length x] x y
+ld0:: (Eq a) => [a] -> [a] -> Int
+ld0 x y = head . reverse $ reihe [0..length y] (length x) x y
 
-ld0'' [i0] [] _ _ = [i0 + 1] -- TODO reconsider.
-ld0'' (i0:i1:is) (a:as) pi x = let min' = minimum [i1 + 1,i0 + charac a x,pi + 1]
-                              in min' : ld0'' (i1:is) as min' x
+zeile :: (Eq a) => [Int] -> Int -> a -> [a] -> [Int]
+zeile [u] left _ [] = [left]--[min (u+1) left]
+zeile (leftUp:up:ups) left c (y:ys) = let new = minimum [charac c y + leftUp, left+ 1,up+1]
+                                       in left:zeile (up:ups) new c ys
+
+reihe :: (Eq a) => [Int] -> Int -> [a] -> [a] -> [Int]
+reihe ups _ [] _ = ups
+reihe ups z (x:xs) y = reihe (zeile ups z x y) z xs y
+
+-- the "leftmost" row of the matrix is wrong for all but the last
+
+type Alignment a = [(Maybe a,Maybe a)]
+toString :: Alignment Char -> String
+toString a = "\n" ++ map (fromMaybe ' ' . fst) a ++ "\n" ++ map (fromMaybe ' ' . snd) a
+
+align :: (Eq a,Ord a) => [a] -> [a] -> (Int, Alignment a)
+align [] [] = (0, [])
+align [] y  = (length y, map (\z -> (Nothing, Just z)) y)
+align x  [] = (length x, map (\z -> (Just z, Nothing)) x)
+align x@(x1:xs) y@(y1:ys) = let (ul,ul_a) = align xs ys
+                                (le,le_a) = align x  ys
+                                (up,up_a) = align xs y
+                                ul' = (ul + charac x1 y1,(Just x1, Just y1):ul_a)
+                                le' = (le + 1           ,(Nothing, Just y1):le_a)
+                                up' = (up + 1           ,(Just x1, Nothing):up_a)
+                             in minimum [ul',le',up']
+
+al :: String -> String -> IO ()
+al x y = let (value, a) = align x y
+          in putStrLn $ show value ++ toString a
