@@ -141,15 +141,18 @@ wf3 init f [] v:vs = f init (Just (v,(wf init f [] vs))) Nothing
 charac :: (Eq a) => a -> a -> Int
 charac x y = if x == y then 0 else 1
 
-ld0:: (Eq a) => [a] -> [a] -> Int
+--type LevenResult a = (Int, Alignment a)
+type LevenResult a = Int
+
+ld0:: (Eq a) => [a] -> [a] -> LevenResult a
 ld0 x y = head . reverse $ reihe [0..length y] (length x) x y
 
-zeile :: (Eq a) => [Int] -> Int -> a -> [a] -> [Int]
+zeile :: (Eq a) => [LevenResult a] -> LevenResult a -> a -> [a] -> [LevenResult a]
 zeile [u] left _ [] = [left]--[min (u+1) left]
 zeile (leftUp:up:ups) left c (y:ys) = let new = minimum [charac c y + leftUp, left+ 1,up+1]
                                        in left:zeile (up:ups) new c ys
 
-reihe :: (Eq a) => [Int] -> Int -> [a] -> [a] -> [Int]
+reihe :: (Eq a) => [LevenResult a] -> LevenResult a -> [a] -> [a] -> [LevenResult a]
 reihe ups _ [] _ = ups
 reihe ups z (x:xs) y = reihe (zeile ups z x y) z xs y
 
