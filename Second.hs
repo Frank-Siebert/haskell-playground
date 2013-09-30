@@ -1,7 +1,7 @@
 -- module Second where
 
 import Data.Int (Int32)
-import Data.List (tails,sort,group)
+import Data.List (tail, tails, init, inits, sort, group)
 import Hashable
 import Data.Maybe (fromJust,fromMaybe)
 import Control.Monad (liftM)
@@ -146,9 +146,9 @@ type LevenResult a = (Int, Alignment a)
 --type LevenResult a = Int
 
 alignToEmpties :: [a] -> [LevenResult a]
-alignToEmpties x = map (\s -> (length s,reverse $ map (\z -> (Nothing, Just z)) s)) $reverse . tails $ x
+alignToEmpties x = map (\s -> (length s,reverse $ map (\z -> (Nothing, Just z)) s)) $inits $ x
 
-alignToEmpty2 x = map (\s -> (length s,reverse $ map (\z -> (Just z, Nothing)) s)) $reverse . tails $ x
+alignToEmpty2 x = init $ map (\s -> (length s,reverse $ map (\z -> (Just z, Nothing)) s)) $inits $ x
 
 ld0:: (Eq a, Ord a ,Show a) => [a] -> [a] -> LevenResult a
 ld0 x y = (\(z,s) -> (z, reverse s)) . head . reverse $ reihe (alignToEmpties y) (alignToEmpty2 x) x y
@@ -156,16 +156,16 @@ ld0 x y = (\(z,s) -> (z, reverse s)) . head . reverse $ reihe (alignToEmpties y)
 traceShow' arg = traceShow arg arg
 
 zeile :: (Eq a, Ord a,Show a) => [LevenResult a] -> LevenResult a -> a -> [a] -> [LevenResult a]
-zeile a b c d | trace ("zeile "++show a++" "++show b++" "++show c++" "++show d) False = undefined
+--zeile a b c d | trace ("zeile "++show a++" "++show b++" "++show c++" "++show d) False = undefined
 zeile [u] left _ [] = [left]--[min (u+1) left]
 zeile (leftUp:up:ups) left c (y:ys) = let new = minimum_alignment leftUp left up c y
-                                       in traceShow' $ left:zeile (up:ups) new c ys
+                                       in left:zeile (up:ups) new c ys
 
 
 reihe :: (Eq a,Ord a,Show a) => [LevenResult a] -> [LevenResult a] -> [a] -> [a] -> [LevenResult a]
-reihe ups les x y | trace ("reihe ups="++show ups++" les="++show les++" x="++show x++" y="++show y) False = undefined
+--reihe ups les x y | trace ("reihe ups="++show ups++" les="++show les++" x="++show x++" y="++show y) False = undefined
 reihe ups _ [] _ = ups
-reihe ups (z:zs) (x:xs) y = traceShow' $ reihe (zeile ups z x y) zs xs y
+reihe ups (z:zs) (x:xs) y = reihe (zeile ups z x y) zs xs y
 
 -- the "leftmost" row of the matrix is wrong for all but the last
 data Edit a = Same a | Replace a a | Insert a | Delete a
