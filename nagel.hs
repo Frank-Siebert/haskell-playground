@@ -35,6 +35,29 @@ replaceZ [] z = z
 replaceZ (x:xs) (l,r:rs) = replaceZ xs (x:l,rs)
 replaceZ xs (l,[]) = replaceZ xs ([], reverse l)
 
+
+-----------------------------------------------------
+type CircList a = ([a]->[a],[a])
+
+circList :: [a] -> CircList a
+circList l = (id,l)
+
+advance :: CircList a -> CircList a
+advance (f , r:rs) = (f . ((:) r) ,rs)
+advance (f , [] ) = advance (id, f [])
+
+headC :: CircList a -> a
+headC (_, r:rs) = r
+headC (f, []) = head . f $ []
+
+takeC :: Int -> CircList a -> [a]
+takeC n c@(_,r:_) = r:takeC (n-1) (advance c)
+takeC n (f,[]) = takeC n (id, f [])
+
+advanceWhile :: (a -> Bool) -> CircList a -> CircList a
+advanceWhile pred cl = if pred (headC cl) then advanceWhile pred (advance cl) else cl
+------------------------------------------------------
+
 data Cell = Empty | Car Int deriving (Eq)
 
 instance Show Cell where
