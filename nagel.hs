@@ -4,6 +4,36 @@ import Control.Monad (replicateM)
 --import Control.Monad.Random
 --import Control.Monad.Random.Class
 
+-- the marker / head is always between 2 elements!
+type Zipper a = ([a],[a])
+
+
+atEnd :: Zipper a -> Bool
+atEnd (_,[]) = True
+atEnd ([],_) = True
+atEnd _ = False
+
+inspectRight :: Zipper a -> a
+inspectRight (_,r:rs) = r
+inspectRight (l,[]) = last l
+
+goRight :: Zipper a -> Zipper a
+goRight (l, r:rs) = (r:l,rs)
+goRight (l, []) = ([], reverse l)
+
+goLeft :: Zipper a -> Zipper a
+goLeft (l:ls,r) = (ls, l:r)
+goLeft ([],r) = (reverse r,[])
+
+takeZ :: Int -> Zipper a -> [a]
+takeZ 0 _ = []
+takeZ n (l,r) = take n . cycle $ (r ++ reverse l)
+
+-- Replaces the next elements by the list, advances the zipper.
+replaceZ :: [a] -> Zipper a -> Zipper a
+replaceZ [] z = z
+replaceZ (x:xs) (l,r:rs) = replaceZ xs (x:l,rs)
+replaceZ xs (l,[]) = replaceZ xs ([], reverse l)
 
 data Cell = Empty | Car Int deriving (Eq)
 
