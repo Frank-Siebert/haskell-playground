@@ -46,6 +46,9 @@ advance :: CircList a -> CircList a
 advance (f , r:rs) = (f . ((:) r) ,rs)
 advance (f , [] ) = advance (id, f [])
 
+isWrap :: CircList a -> CircList a -> Bool
+isWrap (_,before) (_,after) = length before > length after
+
 headC :: CircList a -> a
 headC (_, r:rs) = r
 headC (f, []) = head . f $ []
@@ -56,6 +59,14 @@ takeC n (f,[]) = takeC n (id, f [])
 
 advanceWhile :: (a -> Bool) -> CircList a -> CircList a
 advanceWhile pred cl = if pred (headC cl) then advanceWhile pred (advance cl) else cl
+
+replaceC :: [a] -> CircList a -> CircList a
+replaceC [] cl = cl
+replaceC (x:xs) (f, r:rs) = replaceC xs (f . (x:), rs)
+replaceC xs (f, []) = replaceC xs (id, f [])
+
+showC :: (Show a) => CircList a -> String
+showC (f,r) = show (f []) ++ "^" ++ show r
 ------------------------------------------------------
 
 data Cell = Empty | Car Int deriving (Eq)
@@ -80,34 +91,29 @@ count a (b:bs)= if a==b then 1 + count a bs else 0
 maxSpeed :: Int
 maxSpeed = 5
 
-process :: [Cell] -> [Cell]
-process ls = encycle (length ls) $ process' (ls ++ take maxSpeed (cycle ls)) where
-  -- process' :: [Cell] -> [Cell] -> [Cell] -- on parameter infinite, the other one finite? TODO
-  process' (Empty:ls)     = Empty : process' ls
-  process' (Car speed:ls) = let freeRoad = count Empty ls
-                                newSpeed = minimum [speed+1,freeRoad,maxSpeed]
-                             in replicate newSpeed Empty ++ (Car newSpeed:process' (drop newSpeed ls))
-  process' [] = []
-  encycle n ls = adds (take n ls) (take n $ drop n ls)
-                             
-add :: Cell -> Cell -> Cell
-add Empty c = c
-add c Empty = c
-
-adds :: [Cell] -> [Cell] -> [Cell]
-adds [] [] = []
-adds l [] = l
-adds [] l = l
-adds (a:as) (b:bs) = (add a b):adds as bs
-                                
-
---mpf :: StdGen
---mpf = getRandom (random (mkStdGen 100)) 
-
---randRoad :: Int -> [Cell]
---randRoad n = mpf >> replicateM n (return . next)
-                
 infiniteRandomList :: [Int]
 infiniteRandomList = randoms (mkStdGen 100)
 
+type Road = CircList Cell
 
+-- precondition: The Marker is just before a Car
+moveCar :: Road -> Road
+moveCar road = let (Car oldSpeed):ahead = takeC (maxSpeed+1) road
+                   free = count Empty ahead
+                   newSpeed = minimum [oldSpeed + 1, maxSpeed, free]
+                in replaceC [Car newSpeed] $ replaceC (replicate newSpeed Empty) road
+
+moveOneCar :: Road -> Road
+moveOneCar = moveCar . advanceWhile (==Empty)
+
+makeRoad :: Int -> Road
+makeRoad n = (,) id . makeRoad' $ take n infiniteRandomList where
+           makeRoad' [] = [] -- todo use map instead!
+           makeRoad' (n:ns) = (if (n `mod` (maxSpeed - 1)) == 0 
+                                then Car (n `mod` maxSpeed)
+                                else Empty):makeRoad' ns
+
+-- debug / test:
+rd = makeRoad 10
+mvs = iterate moveOneCar rd
+-- showC $ mvs !! 0
