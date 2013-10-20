@@ -14,7 +14,7 @@ atEnd ([],_) = True
 atEnd _ = False
 
 inspectRight :: Zipper a -> a
-inspectRight (_,r:rs) = r
+inspectRight (_,r:_) = r
 inspectRight (l,[]) = last l
 
 goRight :: Zipper a -> Zipper a
@@ -32,7 +32,7 @@ takeZ n (l,r) = take n . cycle $ (r ++ reverse l)
 -- Replaces the next elements by the list, advances the zipper.
 replaceZ :: [a] -> Zipper a -> Zipper a
 replaceZ [] z = z
-replaceZ (x:xs) (l,r:rs) = replaceZ xs (x:l,rs)
+replaceZ (x:xs) (l,_:rs) = replaceZ xs (x:l,rs)
 replaceZ xs (l,[]) = replaceZ xs ([], reverse l)
 
 
@@ -50,7 +50,7 @@ isWrap :: CircList a -> CircList a -> Bool
 isWrap (_,before) (_,after) = length before > length after
 
 headC :: CircList a -> a
-headC (_, r:rs) = r
+headC (_, r:_) = r
 headC (f, []) = head . f $ []
 
 takeC :: Int -> CircList a -> [a]
@@ -62,7 +62,7 @@ advanceWhile pred cl = if pred (headC cl) then advanceWhile pred (advance cl) el
 
 replaceC :: [a] -> CircList a -> CircList a
 replaceC [] cl = cl
-replaceC (x:xs) (f, r:rs) = replaceC xs (f . (x:), rs)
+replaceC (x:xs) (f, _:rs) = replaceC xs (f . (x:), rs)
 replaceC xs (f, []) = replaceC xs (id, f [])
 
 showCm :: (Show a) => CircList a -> String
@@ -77,7 +77,8 @@ data Cell = Empty | Car Int deriving (Eq)
 instance Show Cell where
     show Empty = "."
     show (Car n) = show n
-    
+
+toChar :: Cell -> Char    
 toChar Empty = '.'
 toChar (Car n) = head . show $ n
 
@@ -117,8 +118,12 @@ makeRoad n = (,) id . makeRoad' $ take n infiniteRandomList where
                                 else Empty):makeRoad' ns
 
 -- debug / test:
+rd :: Road
 rd = makeRoad 10
+
+mvs' :: [Road]
 mvs' = iterate moveOneCar rd
+
 mvs :: Int -> Road -> IO Road
 mvs 0 r = return r
 mvs n r = putStrLn (showC r) >> mvs (n-1) (moveOneCar r)
