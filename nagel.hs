@@ -65,8 +65,11 @@ replaceC [] cl = cl
 replaceC (x:xs) (f, r:rs) = replaceC xs (f . (x:), rs)
 replaceC xs (f, []) = replaceC xs (id, f [])
 
+showCm :: (Show a) => CircList a -> String
+showCm (f,r) = show (f []) ++ "^" ++ show r
+
 showC :: (Show a) => CircList a -> String
-showC (f,r) = show (f []) ++ "^" ++ show r
+showC (f,r) = show (f r)
 ------------------------------------------------------
 
 data Cell = Empty | Car Int deriving (Eq)
@@ -115,5 +118,8 @@ makeRoad n = (,) id . makeRoad' $ take n infiniteRandomList where
 
 -- debug / test:
 rd = makeRoad 10
-mvs = iterate moveOneCar rd
--- showC $ mvs !! 0
+mvs' = iterate moveOneCar rd
+mvs :: Int -> Road -> IO Road
+mvs 0 r = return r
+mvs n r = putStrLn (showC r) >> mvs (n-1) (moveOneCar r)
+-- showC $ mvs' !! 0
