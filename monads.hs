@@ -38,7 +38,7 @@ instance Functor Chain where
 data Intree a = Nil | Node (Intree a) a (Intree a)
 
 instance Functor Intree where
-  fmap f Nil = Nil
+  fmap _ Nil = Nil
   fmap f (Node left x right) = Node (fmap f left) (f x) (fmap f right)
   
 instance Monad Intree where
@@ -48,16 +48,6 @@ instance Monad Intree where
       Nil -> Nil -- what about left and right?
       (Node left' y right') -> Node (left >>= f) y right'  -- todo! what about left' and right?
       
-data IIO a = IIO (IO a) a
-instance Monad (IIO) where
-  return x = IIO (return x) x
---  (IIO io x) >>= f = let (IIO io' x') = f x in IIO (io >> putStrLn "interject"  >> io') x'
-  (IIO io x) >>= f = let (IIO io' x') = f x in IIO (io >>= (\tmp -> (putStrLn "interject" >> return tmp) ) >> io') x'
-
-runIIO (IIO io x) = io
-r :: IO () -> IIO ()
-r io = IIO io ()
-
 data My m a = My (m (My m a)) | My0 a
 
 -- lift :: Monad m => m a -> t m a
@@ -78,19 +68,17 @@ instance (Monad m) => Monad (My m) where
                               My0 x' -> return . f $ x'
                               z -> return (z >>= f) )
 
-
-executeMyStep :: My m a -> m (My m a) -- ????
-executeMyStep (My x) = x
-
 io :: a -> IO a
 io = return
 
+steps, steps2 :: My IO ()
 steps = do My0 ()
            liftIO $ print "Hallo"
            liftIO $ print "World"
 steps2 = do My0 ()
             x <- liftIO $ getLine
             liftIO $ putStrLn x
+steps1 :: (Show a) => a -> My IO ()
 steps1 x = do My0 ()
               liftIO $ print x
 
@@ -100,19 +88,21 @@ repeatM 1 f = f
 repeatM 2 f = (\x -> f x >>= f)
 repeatM n f = (\x -> f x >>= (repeatM (n-1) f))
 
+five'', five' :: String -> My IO String
+five :: String -> My IO ()
 five'' = \x-> liftIO $ print x >> getLine >>= (\y -> return (x++y))
 five' = repeatM 5 five''
 five x = My0 x >>= five' >> (liftIO $ return ())
 
 executeStepwise:: (Monad m) => [My m ()] -> m ()
-executeStepwise ms = executeStepwise' (ms,[]) >> return () where
+executeStepwise monads = executeStepwise' (monads,[]) >> return () where
     executeStepwise' :: (Monad m) => ([My m ()], [My m ()]) -> m ([My m ()], [My m ()])
     executeStepwise' ([],[]) = return ([],[])
     executeStepwise' ([], ms') = executeStepwise' (reverse ms',[])
     executeStepwise' ((My0 ()):ms, ms') = executeStepwise' (ms, ms')
---    executeStepwise' (m:ms, ms') = (do m' <- executeMyStep m
+--    executeStepwise' ((My action):ms, ms') = (do m' <- action
 --                                       executeStepwise' (ms, m':ms'))
-    executeStepwise' (m:ms, ms') = executeMyStep m >>= executeStepwise' . (,) ms . (:ms')
+    executeStepwise' ((My action):ms, ms') = action >>= executeStepwise' . (,) ms . (:ms')
 -- todo: still swaps order, so we get 1, 1', 2', 2, 3, 3',...
 -- use something more elegant than reverse
 
