@@ -1,8 +1,5 @@
 
-import System.Random (random, randoms, mkStdGen, StdGen, next)
-import Control.Monad (replicateM)
---import Control.Monad.Random
---import Control.Monad.Random.Class
+import System.Random (randoms, mkStdGen)
 
 -- the marker / head is always between 2 elements!
 type Zipper a = ([a],[a])
@@ -47,7 +44,7 @@ advance (f , r:rs) = (f . ((:) r) ,rs)
 advance (f , [] ) = advance (id, f [])
 
 isWrap :: CircList a -> CircList a -> Bool
-isWrap (_,before) (_,after) = length before > length after
+isWrap (_,before) (_,after) = length before < length after
 
 headC :: CircList a -> a
 headC (_, r:_) = r
@@ -58,7 +55,7 @@ takeC n c@(_,r:_) = r:takeC (n-1) (advance c)
 takeC n (f,[]) = takeC n (id, f [])
 
 advanceWhile :: (a -> Bool) -> CircList a -> CircList a
-advanceWhile pred cl = if pred (headC cl) then advanceWhile pred (advance cl) else cl
+advanceWhile p cl = if p (headC cl) then advanceWhile p (advance cl) else cl
 
 replaceC :: [a] -> CircList a -> CircList a
 replaceC [] cl = cl
@@ -110,12 +107,16 @@ moveCar road = let (Car oldSpeed):ahead = takeC (maxSpeed+1) road
 moveOneCar :: Road -> Road
 moveOneCar = moveCar . advanceWhile (==Empty)
 
+moveAllCar :: Road -> Road
+moveAllCar start = moveAllCar' start start where
+  moveAllCar' last' iter | isWrap last' iter = iter
+                         | otherwise         = moveAllCar' iter . moveOneCar $ iter 
+
 makeRoad :: Int -> Road
-makeRoad n = (,) id . makeRoad' $ take n infiniteRandomList where
-           makeRoad' [] = [] -- todo use map instead!
-           makeRoad' (n:ns) = (if (n `mod` (maxSpeed - 1)) == 0 
+makeRoad len = (,) id . makeRoad' $ take len infiniteRandomList where
+           makeRoad' = map (\n -> if (n `mod` (maxSpeed - 1)) == 0 
                                 then Car (n `mod` maxSpeed)
-                                else Empty):makeRoad' ns
+                                else Empty)
 
 -- debug / test:
 rd :: Road
@@ -126,5 +127,5 @@ mvs' = iterate moveOneCar rd
 
 mvs :: Int -> Road -> IO Road
 mvs 0 r = return r
-mvs n r = putStrLn (showC r) >> mvs (n-1) (moveOneCar r)
+mvs n r = putStrLn (showC r) >> mvs (n-1) (moveAllCar r)
 -- showC $ mvs' !! 0

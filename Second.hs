@@ -1,7 +1,7 @@
 -- module Second where
 
 import Data.Int (Int32)
-import Data.List (tail, tails, init, inits, sort, group)
+import Data.List (tails, inits, sort, group)
 import Hashable
 import Data.Maybe (fromJust,fromMaybe)
 import Control.Monad (liftM)
@@ -17,7 +17,7 @@ time a = do
     putStrLn $ "Computation time: " ++ (show diff)
     return v
 
-ld :: (Eq a) => [a] -> [a] -> Int
+ld, ld4, ld5, ld6 :: (Eq a) => [a] -> [a] -> Int
 ld [] v = length v
 ld u [] = length u
 -- ld u@(u1:us) v@(v1:vs) = min (o+(ld us vs)) ((min (ld u vs) (ld us v))+1)
@@ -112,7 +112,7 @@ main = do
 output = zipWith (,) (ld4' "blah" "blub") (ld6' "blah" "blub")
 
 wavefront :: b -> ([a] -> b -> b) -> ([a] -> b -> b) -> ([a] -> [a] -> b -> b -> b -> b)-> [a] -> [a] -> b
-wavefront ul _  _  f []       []       = ul
+wavefront ul _  _  _ []       []       = ul
 wavefront ul dn ri f u@(_:us) []       = (dn u (wavefront ul dn ri f us []))
 wavefront ul dn ri f []       v@(_:vs) = (ri v (wavefront ul dn ri f [] vs))
 wavefront ul dn ri f u@(_:us) v@(_:vs) = f u v (wavefront ul dn ri f us v )
