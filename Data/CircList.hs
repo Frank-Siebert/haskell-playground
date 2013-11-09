@@ -1,6 +1,8 @@
 module Data.CircList
-  ( mkCircList
+  ( CircList
+  , mkCircList
   , head
+  , reverseC
   , toFiniteList
   , toInfList
   , rewind
@@ -34,6 +36,9 @@ mkCircList x xs = C [] x xs
 
 head :: CircList a -> a
 head (C _ x _) = x
+
+reverseC :: CircList a -> CircList a
+reverseC (C ls h rs) = C rs h ls
 
 toFiniteList :: CircList a -> [a]
 toFiniteList (C ls h rs) = (h:rs) ++ reverse ls

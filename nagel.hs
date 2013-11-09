@@ -1,73 +1,7 @@
 
 import System.Random (randoms, mkStdGen)
-
--- the marker / head is always between 2 elements!
-type Zipper a = ([a],[a])
-
-
-atEnd :: Zipper a -> Bool
-atEnd (_,[]) = True
-atEnd ([],_) = True
-atEnd _ = False
-
-inspectRight :: Zipper a -> a
-inspectRight (_,r:_) = r
-inspectRight (l,[]) = last l
-
-goRight :: Zipper a -> Zipper a
-goRight (l, r:rs) = (r:l,rs)
-goRight (l, []) = ([], reverse l)
-
-goLeft :: Zipper a -> Zipper a
-goLeft (l:ls,r) = (ls, l:r)
-goLeft ([],r) = (reverse r,[])
-
-takeZ :: Int -> Zipper a -> [a]
-takeZ 0 _ = []
-takeZ n (l,r) = take n . cycle $ (r ++ reverse l)
-
--- Replaces the next elements by the list, advances the zipper.
-replaceZ :: [a] -> Zipper a -> Zipper a
-replaceZ [] z = z
-replaceZ (x:xs) (l,_:rs) = replaceZ xs (x:l,rs)
-replaceZ xs (l,[]) = replaceZ xs ([], reverse l)
-
-
------------------------------------------------------
-type CircList a = ([a]->[a],[a])
-
-circList :: [a] -> CircList a
-circList l = (id,l)
-
-advance :: CircList a -> CircList a
-advance (f , r:rs) = (f . ((:) r) ,rs)
-advance (f , [] ) = advance (id, f [])
-
-isWrap :: CircList a -> CircList a -> Bool
-isWrap (_,before) (_,after) = length before < length after
-
-headC :: CircList a -> a
-headC (_, r:_) = r
-headC (f, []) = head . f $ []
-
-takeC :: Int -> CircList a -> [a]
-takeC n c@(_,r:_) = r:takeC (n-1) (advance c)
-takeC n (f,[]) = takeC n (id, f [])
-
-advanceWhile :: (a -> Bool) -> CircList a -> CircList a
-advanceWhile p cl = if p (headC cl) then advanceWhile p (advance cl) else cl
-
-replaceC :: [a] -> CircList a -> CircList a
-replaceC [] cl = cl
-replaceC (x:xs) (f, _:rs) = replaceC xs (f . (x:), rs)
-replaceC xs (f, []) = replaceC xs (id, f [])
-
-showCm :: (Show a) => CircList a -> String
-showCm (f,r) = show (f []) ++ "^" ++ show r
-
-showC :: (Show a) => CircList a -> String
-showC (f,r) = show (f r)
-------------------------------------------------------
+import Data.CircList
+import Control.Comonad
 
 data Cell = Empty | Car Int deriving (Eq)
 
@@ -77,7 +11,7 @@ instance Show Cell where
 
 toChar :: Cell -> Char    
 toChar Empty = '.'
-toChar (Car n) = head . show $ n
+toChar (Car n) = Prelude.head . show $ n
 
 {-
 instance Show ([] Cell) where
@@ -97,23 +31,11 @@ infiniteRandomList = randoms (mkStdGen 100)
 
 type Road = CircList Cell
 
--- precondition: The Marker is just before a Car
-moveCar :: Road -> Road
-moveCar road = let (Car oldSpeed):ahead = takeC (maxSpeed+1) road
-                   free = count Empty ahead
-                   newSpeed = minimum [oldSpeed + 1, maxSpeed, free]
-                in replaceC [Car newSpeed] $ replaceC (replicate newSpeed Empty) road
-
-moveOneCar :: Road -> Road
-moveOneCar = moveCar . advanceWhile (==Empty)
-
-moveAllCar :: Road -> Road
-moveAllCar start = moveAllCar' start start where
-  moveAllCar' last' iter | isWrap last' iter = iter
-                         | otherwise         = moveAllCar' iter . moveOneCar $ iter 
+cl :: [a] -> CircList a
+cl (x:xs) = mkCircList x xs
 
 makeRoad :: Int -> Road
-makeRoad len = (,) id . makeRoad' $ take len infiniteRandomList where
+makeRoad len = cl (makeRoad' $ take len infiniteRandomList) where
            makeRoad' = map (\n -> if (n `mod` (maxSpeed - 1)) == 0 
                                 then Car (n `mod` maxSpeed)
                                 else Empty)
@@ -122,10 +44,22 @@ makeRoad len = (,) id . makeRoad' $ take len infiniteRandomList where
 rd :: Road
 rd = makeRoad 10
 
-mvs' :: [Road]
-mvs' = iterate moveOneCar rd
+updateSpeed :: [Cell] -> Cell
+updateSpeed (Empty:_) = Empty
+updateSpeed (Car curSpeed:ahead) = let freeRoad = count Empty ahead
+                                       newSpeed = minimum [curSpeed + 1, freeRoad, maxSpeed]
+                                    in Car newSpeed
 
-mvs :: Int -> Road -> IO Road
-mvs 0 r = return r
-mvs n r = putStrLn (showC r) >> mvs (n-1) (moveAllCar r)
--- showC $ mvs' !! 0
+-- We need to do something to move all cars according to their speed...
+
+move :: [Cell] -> Cell
+move = move' 0 where
+       move' n (c@(Car m):_) | n==m = c
+       move' n (_:xs)     | n>maxSpeed = Empty
+                          | otherwise = move' (n+1) xs
+
+nagel :: Road -> Road
+nagel r = let a = r =>> toInfList
+              b = fmap updateSpeed a
+              c = b =>> move . toInfList . reverseC
+           in c
