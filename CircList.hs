@@ -22,6 +22,10 @@ data CircList a = C [a] a [a]
 instance Functor CircList where
   fmap f (C ls h rs) = C (map f ls) (f h) (map f rs)
   
+instance Comonad CircList where
+  extract = head
+  duplicate c = C (lefts c) c (rights c)
+  
 instance (Show a) => Show (CircList a) where
   show (C ls h rs) = show (reverse ls) ++ show h ++ show rs
 
@@ -46,6 +50,14 @@ right :: CircList a -> CircList a
 right cl@(C [] _ []) = cl
 right    (C ls h []) = let (x:xs) = reverse (h:ls) in C [] x xs 
 right    (C ls h (r:rs)) = C (h:ls) r rs
+
+lefts :: CircList a -> [CircList a]
+lefts (C [] _ _) = []
+lefts c = let l = left c in l:lefts l
+
+rights :: CircList a -> [CircList a]
+rights (C _ _ []) = []
+rights c = let r = right c in r:rights r
 
 replace :: a -> CircList a -> CircList a
 replace x (C ls _ rs) = C ls x rs
