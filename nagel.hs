@@ -1,6 +1,7 @@
 
 import System.Random (randoms, mkStdGen)
 import Data.CircList
+import Data.List (intercalate)
 import Control.Comonad
 
 data Cell = Empty | Car Int deriving (Eq)
@@ -12,12 +13,6 @@ instance Show Cell where
 toChar :: Cell -> Char    
 toChar Empty = '.'
 toChar (Car n) = Prelude.head . show $ n
-
-{-
-instance Show ([] Cell) where
-    show []     = ""
-    show (x:xs) = show x : show xs
--}
 
 count :: (Eq a) => a -> [a] -> Int
 count _   []  = 0
@@ -63,3 +58,10 @@ nagel r = let a = r =>> toInfList
               b = fmap updateSpeed a
               c = b =>> move . toInfList . reverseC
            in c
+
+display :: [Road] -> String
+display = intercalate "\n" . map (map toChar . toFiniteList)
+
+main :: IO ()
+main = putStr . display . take 20 . iterate nagel . makeRoad $ 100
+
