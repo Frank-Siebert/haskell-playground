@@ -15,8 +15,7 @@ toChar Empty = '.'
 toChar (Car n) = Prelude.head . show $ n
 
 count :: (Eq a) => a -> [a] -> Int
-count _   []  = 0
-count a (b:bs)= if a==b then 1 + count a bs else 0
+count x = length . takeWhile (x==)
 
 maxSpeed :: Int
 maxSpeed = 5
