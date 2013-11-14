@@ -44,8 +44,6 @@ updateSpeed (Car curSpeed:ahead) = let freeRoad = count Empty ahead
                                        newSpeed = minimum [curSpeed + 1, freeRoad, maxSpeed]
                                     in Car newSpeed
 
--- We need to do something to move all cars according to their speed...
-
 move :: [Cell] -> Cell
 move = move' 0 where
        move' n (c@(Car m):_) | n==m = c
@@ -53,10 +51,8 @@ move = move' 0 where
                           | otherwise = move' (n+1) xs
 
 nagel :: Road -> Road
-nagel r = let a = r =>> toInfList
-              b = fmap updateSpeed a
-              c = b =>> move . toInfList . reverseC
-           in c
+nagel r =  r =>> updateSpeed . toInfList
+             =>> move . toInfList . reverseC
 
 display :: [Road] -> String
 display = intercalate "\n" . map (map toChar . toFiniteList)
