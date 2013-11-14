@@ -26,7 +26,7 @@ infiniteRandomList = randoms (mkStdGen 100)
 type Road = CircList Cell
 
 cl :: [a] -> CircList a
-cl (x:xs) = mkCircList x xs
+cl (x:xs) = mkCircList [] x xs
 
 makeRoad :: Int -> Road
 makeRoad len = cl (makeRoad' $ take len infiniteRandomList) where

@@ -1,7 +1,9 @@
 module Data.CircList
   ( CircList
   , mkCircList
-  , head
+  , getHead
+  , getLeft
+  , getRight
   , reverseC
   , toFiniteList
   , toInfList
@@ -9,14 +11,13 @@ module Data.CircList
   , left
   , right
   , replace
-  , isWrap
   ) where
   
 import Prelude hiding (head)
 import Control.Comonad
 
 --
-data CircList a = C [a] a [a]
+data CircList a = C { getLeft :: [a], getHead :: a, getRight :: [a] }
 -- internally normalized: rs==[] implies ls==[]
 -- this normalization is bullshit. It is fine if there is no central element.
 
@@ -25,17 +26,14 @@ instance Functor CircList where
   fmap f (C ls h rs) = C (map f ls) (f h) (map f rs)
   
 instance Comonad CircList where
-  extract = head
+  extract = getHead
   duplicate c = C (lefts c) c (rights c)
   
 instance (Show a) => Show (CircList a) where
   show (C ls h rs) = show (reverse ls) ++ show h ++ show rs
 
-mkCircList :: a -> [a] -> CircList a
-mkCircList x xs = C [] x xs
-
-head :: CircList a -> a
-head (C _ x _) = x
+mkCircList :: [a] -> a -> [a] -> CircList a
+mkCircList ls x xs = C ls x xs
 
 reverseC :: CircList a -> CircList a
 reverseC (C ls h rs) = C rs h ls
@@ -71,6 +69,5 @@ rewind :: CircList a -> CircList a
 rewind cl@(C [] _ _) = cl
 rewind (C (l:ls) h rs) = rewind (C ls l (h:rs))
 
-isWrap :: CircList a -> Bool
-isWrap (C [] _ _) = True
-isWrap _ = False
+dual :: (CircList a -> CircList a) -> (CircList a -> CircList a)
+dual f = reverseC . f . reverseC
