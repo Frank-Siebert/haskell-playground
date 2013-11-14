@@ -33,7 +33,7 @@ cl (x:xs) = mkCircList [] x xs
 makeRoad :: Int -> Road
 makeRoad len = cl (makeRoad' $ take len infiniteRandomList) where
            makeRoad' = map (\n -> if (n `mod` (maxSpeed - 1)) == 0 
-                                then Car (n `mod` maxSpeed) (randoms . mkStdGen $ n)
+                                then Car (n `mod` maxSpeed) (randoms . mkStdGen $ n + 1)
                                 else Empty)
 
 -- debug / test:
@@ -42,9 +42,12 @@ rd = makeRoad 10
 
 updateSpeed :: [Cell] -> Cell
 updateSpeed (Empty:_) = Empty
-updateSpeed (Car curSpeed rnd:ahead) = let freeRoad = count Empty ahead
-                                           newSpeed = minimum [curSpeed + 1, freeRoad, maxSpeed]
-                                        in Car newSpeed rnd
+updateSpeed (Car curSpeed (rnd:rnds):ahead) = 
+  let freeRoad = count Empty ahead
+      newSpeed = minimum [curSpeed + 1, freeRoad, maxSpeed]
+      delay = if rnd `mod` 5 == 0 then 1 else 0
+      delayedSpeed = max 0 $ newSpeed - delay      
+   in Car delayedSpeed rnds
 
 move :: [Cell] -> Cell
 move = move' 0 where
