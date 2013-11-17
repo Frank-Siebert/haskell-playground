@@ -11,6 +11,7 @@ import Data.List (tails,inits)
 test :: (forall a. [a] -> a) -> (forall b. [b] -> [[b]]) -> [Int] -> IO ()
 test unwrap duplicate dat = do
   let dupdat = duplicate dat
+  putStrLn ""
   checkEq "fmap id            == id" dat (fmap id dat)
   checkEq "unwrap . duplicate == id" dat (unwrap dupdat)
   checkEq "fmap unwrap . dupl == id" dat (fmap unwrap dupdat)
@@ -28,6 +29,7 @@ main = do test head (init . tails) [1..4]
           test last (reverse . init . tails) [1..4] -- fails
           test last (tail . inits) [1..4]
           test head (\ls -> replicate (length ls) ls) [1..4] -- seems ok, but NOK with fmap unwrap . duplicate = id
+          test head (reverse . init . tails) [1..4]
 
 unun :: (Functor f) => f a -> a
 unun = undefined
