@@ -13,15 +13,28 @@ prime x = and [not (divisible x y) | y <- [2..sqrtx]]
 				  sqrtx = floor . sqrt  . fromIntegral $ x
 				  --sqrtx = floor (sqrt (fromIntegral x))
 
+-- prime2 is much slower than prime!
 prime2 x = and [not (divisible x y) | y <- takeWhile (\z -> z*z <=x) primes2]
                 where 
 				  divisible x y = (x `mod` y) == 0
+
+-- not faster at all by just restricting to Int, try 1000000007. Or 2147483647
+-- simply trying every possible divisor much faster.
+primeInt :: Int -> Bool
+primeInt x = x /= 2 && not (even x) && and [not (divisible x y) | y <- [3,5..sqrtx]]
+                where
+				  divisible x y = (x `rem` y) == 0
+				  sqrtx = floor . sqrt  . fromIntegral $ x
 					  
 
 sieve,sieve2old :: (Integral a) => [a]
 sieve2old = 2:[n | n <-[3,5..], all (\x -> n `mod` x /= 0) $ takeWhile (\x-> x*x <= n) sieve2old]
 
 sieve = 2:[n | n <-[3,5..], all (\x -> n `mod` x /= 0) $ takeWhile (<= sqrtnat n) sieve]
+           where sqrtnat = floor . sqrt  . fromIntegral
+
+sieveInt :: [Int]
+sieveInt = 2:[n | n <-[3,5..], all (\x -> n `rem` x /= 0) $ takeWhile (<= sqrtnat n) sieve]
            where sqrtnat = floor . sqrt  . fromIntegral 
 {-
 data (Integral a) => Sieve a = Sieve a [a]
@@ -72,8 +85,9 @@ main = do args <- getArgs
 primfaktoren :: Integral a => a -> [a]
 primfaktoren n = pf n primes2 where
   pf 1 _ =  [];
-  pf n aps@(p:ps) = if (n `mod` p == 0) 
-                then p:(pf (n `div` p) aps)
+  pf n aps@(p:ps) = let (q,r) = n `quotRem` p in
+    if (r == 0)
+                then p:(pf q aps)
 				else if p*p <= n then pf n ps else [n]
 
 teiler :: Integral a => a -> [a]
