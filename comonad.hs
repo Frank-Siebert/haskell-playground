@@ -1,5 +1,7 @@
 -- play around which defintions of unwrap and duplicate make lists a comonad
 import Data.List (tails,inits)
+import Data.CircList
+import Control.Comonad
 
 -- does not work in ghci, but can be compiled by ghc with -XRankNTypes
 
@@ -11,7 +13,16 @@ import Data.List (tails,inits)
 test :: (forall a. [a] -> a) -> (forall b. [b] -> [[b]]) -> [Int] -> IO ()
 test unwrap duplicate dat = do
   let dupdat = duplicate dat
-  putStrLn ""
+  putStrLn "list"
+  checkEq "fmap id            == id" dat (fmap id dat)
+  checkEq "unwrap . duplicate == id" dat (unwrap dupdat)
+  checkEq "fmap unwrap . dupl == id" dat (fmap unwrap dupdat)
+  checkEq "dup . dup==fmap dup .dup" (duplicate dupdat) (fmap duplicate dupdat)
+
+testCm :: (Comonad w, Eq (w a), Show (w a), Eq (w (w (w a))), Show (w (w (w a)))) => (forall a. w a -> a) -> (forall b. w b -> w (w b)) -> w a -> IO () 
+testCm unwrap dupl dat = do
+  let dupdat = dupl dat
+  putStrLn "comonad"
   checkEq "fmap id            == id" dat (fmap id dat)
   checkEq "unwrap . duplicate == id" dat (unwrap dupdat)
   checkEq "fmap unwrap . dupl == id" dat (fmap unwrap dupdat)
@@ -30,6 +41,14 @@ main = do test head (init . tails) [1..4]
           test last (tail . inits) [1..4]
           test head (\ls -> replicate (length ls) ls) [1..4] -- seems ok, but NOK with fmap unwrap . duplicate = id
           test head (reverse . init . tails) [1..4]
+          testCircList
+
+testCircList = let cl = mkCircList [(-1),(-2)..(-4)] 0 [1..4] in do
+  testCm getHead duplicate cl
+  testCm getHead (duplicate . reverseC) cl
+  testCm getHead (reverseC . duplicate . reverseC) cl
+  testCm getHead (reverseC . duplicate) cl
+
 
 unun :: (Functor f) => f a -> a
 unun = undefined
