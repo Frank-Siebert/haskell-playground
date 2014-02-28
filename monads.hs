@@ -63,11 +63,7 @@ liftIO action = Bind (action >>= return . Return)
 instance (Monad m) => Monad (Free m) where
   return = Return
   Return x >>= f = f x
-  Bind action >>= f = Bind (do 
-    x <- action
-    case x of 
-        Return x' -> return . f $ x'
-        z -> return (z >>= f) )
+  Bind action >>= f = Bind $ action >>= return . (>>= f)
 
 io :: a -> IO a
 io = return
