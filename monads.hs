@@ -48,38 +48,39 @@ instance Monad Intree where
       Nil -> Nil -- what about left and right?
       (Node left' y right') -> Node (left >>= f) y right'  -- todo! what about left' and right?
       
-data My m a = My (m (My m a)) | My0 a
+data Free m a = Return a | Bind (m (Free m a))
 
 -- lift :: Monad m => m a -> t m a
-instance MonadTrans My where
-  lift z = My (z >>= return . My0)
+instance MonadTrans Free where
+  lift z = Bind (z >>= return . Return)
 
 --instance (MonadIO m) => MonadIO (My m) where
 --  liftIO = lift . liftIO
-liftIO :: IO a -> My IO a
-liftIO action = My (action >>= return . My0)
+liftIO :: IO a -> Free IO a
+liftIO action = Bind (action >>= return . Return)
 
 
-instance (Monad m) => Monad (My m) where
-  return = My0
-  My0 x >>= f = f x
-  My action >>= f = My (do x <- action
-                           case x of 
-                              My0 x' -> return . f $ x'
-                              z -> return (z >>= f) )
+instance (Monad m) => Monad (Free m) where
+  return = Return
+  Return x >>= f = f x
+  Bind action >>= f = Bind (do 
+    x <- action
+    case x of 
+        Return x' -> return . f $ x'
+        z -> return (z >>= f) )
 
 io :: a -> IO a
 io = return
 
-steps, steps2 :: My IO ()
-steps = do My0 ()
+steps, steps2 :: Free IO ()
+steps = do Return ()
            liftIO $ print "Hallo"
            liftIO $ print "World"
-steps2 = do My0 ()
+steps2 = do Return ()
             x <- liftIO $ getLine
             liftIO $ putStrLn x
-steps1 :: (Show a) => a -> My IO ()
-steps1 x = do My0 ()
+steps1 :: (Show a) => a -> Free IO ()
+steps1 x = do Return ()
               liftIO $ print x
 
 repeatM :: (Monad m) => Int -> (a -> m a) -> a -> m a
@@ -88,23 +89,23 @@ repeatM 1 f = f
 repeatM 2 f = (\x -> f x >>= f)
 repeatM n f = (\x -> f x >>= (repeatM (n-1) f))
 
-five'', five' :: String -> My IO String
-five :: String -> My IO ()
+five'', five' :: String -> Free IO String
+five :: String -> Free IO ()
 five'' = \x-> liftIO $ print x >> getLine >>= (\y -> return (x++y))
 five' = repeatM 5 five''
-five x = My0 x >>= five' >> (liftIO $ return ())
+five x = Return x >>= five' >> (liftIO $ return ())
 
-executeStepwise:: (Monad m) => [My m ()] -> m ()
+executeStepwise:: (Monad m) => [Free m ()] -> m ()
 executeStepwise monads = executeStepwise' (monads,[]) >> return () where
-    executeStepwise' :: (Monad m) => ([My m ()], [My m ()]) -> m ([My m ()], [My m ()])
+    executeStepwise' :: (Monad m) => ([Free m ()], [Free m ()]) -> m ([Free m ()], [Free m ()])
     executeStepwise' ([],[]) = return ([],[])
     executeStepwise' ([], ms') = executeStepwise' (reverse ms',[])
-    executeStepwise' ((My0 ()):ms, ms') = executeStepwise' (ms, ms')
+    executeStepwise' ((Return ()):ms, ms') = executeStepwise' (ms, ms')
 --    executeStepwise' ((My action):ms, ms') = (do m' <- action
 --                                       executeStepwise' (ms, m':ms'))
-    executeStepwise' ((My action):ms, ms') = action >>= executeStepwise' . (,) ms . (:ms')
+    executeStepwise' ((Bind action):ms, ms') = action >>= executeStepwise' . (,) ms . (:ms')
 -- todo: still swaps order, so we get 1, 1', 2', 2, 3, 3',...
 -- use something more elegant than reverse
 
-threads :: [My IO ()]
+threads :: [Free IO ()]
 threads = [sequence_ [liftIO (putStrLn $ "Thread "++(c:" step "++ show n)) | n<-[1..4]] | c <- ['A'..'D']]
