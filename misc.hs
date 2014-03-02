@@ -32,6 +32,9 @@ data Password = Password { pw :: String, x :: Int, total :: Int } deriving Show
 --    return
 data PasswordGen = PasswordGen { chars :: [Char], inputmax:: Int } deriving Show
 
+pgs :: PasswordGen
+pgs = PasswordGen (['a'..'z']) 26
+
 addDice :: Int -> PasswordGen -> Password -> Password
 addDice dice (PasswordGen chars inputmax) (Password pw x total) = Password pw (x*inputmax+dice) (total * inputmax)
 

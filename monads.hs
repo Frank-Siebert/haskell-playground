@@ -60,10 +60,19 @@ liftIO :: IO a -> Free IO a
 liftIO action = Bind (action >>= return . Return)
 
 
-instance (Monad m) => Monad (Free m) where
+instance (Functor m) => Monad (Free m) where
   return = Return
   Return x >>= f = f x
-  Bind action >>= f = Bind $ action >>= return . (>>= f)
+  Bind action >>= f = Bind $ fmap (>>= f) action
+  
+instance (Functor f) => Functor (Free f) where
+  fmap f (Return x) = Return (f x)
+  fmap f (Bind x) = Bind $ fmap (fmap f) x
+
+instance (Applicative f) => Applicative (Free f) where
+  pure = Return
+  Return f <*> x = fmap f x
+  Bind   f <*> x = Bind $ fmap (<*> x) f
 
 io :: a -> IO a
 io = return
@@ -105,3 +114,6 @@ executeStepwise monads = executeStepwise' (monads,[]) >> return () where
 
 threads :: [Free IO ()]
 threads = [sequence_ [liftIO (putStrLn $ "Thread "++(c:" step "++ show n)) | n<-[1..4]] | c <- ['A'..'D']]
+
+applThread :: Free IO ()
+applThread = lift (putStrLn "Hallo") *> lift (putStrLn "Welt")
