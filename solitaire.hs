@@ -57,6 +57,49 @@ moveCol (run,cs) dst = [(drop (length subrun) (reverse run) ++ cs,subrun ++/ dst
 moveCols :: (Column,Column) -> [(Column,Column)]
 moveCols (src,dst) = moveCol (lowestRun src) dst
 
+{-
+I need a function (I named it `applyToEveryPair`) that works on lists, e.g. `[x0,x1,x2,x3,...]`, and uses a function
+`f:: (a,a) -> [(a,a)]`. For every (distinct) pair `(xi,xj)`, `i/=j` of the list
+I want all lists where `xi` is replaced by `yik` and `xj` is replaced by `yjk`.
+
+If input and output of `f` are denoted by
+    f (x,y) = [(x0,y0),...,(xk,yk)]
+and our sample input is
+    applyToEveryPair f [a0,...,an]
+    
+    [a0, a1 ,a2 ,a3 ]  -- input to applyToEveryPair
+      |   |
+      |   |
+      v   v
+      f(a0, a1) =[(b0,b1),(c0,c1)]
+      |   |
+      v   v
+    [b0, b1, a2, a3]  -- to be included in output
+    [c0, c1, a2, a3]  -- to be included in output
+       ...            -- more output
+          |      |    -- now combine (a3,a1)
+           \    /
+            \  /
+             \/
+             /\
+            /  \
+         f(a3, a1) =
+         [(d3, d1)]
+            \  /
+             \/
+             /\
+            /  \
+           /    \
+    [a0, d1 ,a2 ,d3 ]  -- to be included in output
+
+A use case would be a matrix and compute all resulting matrices for every (pairwise) line swap,
+or, in my case, all possible move in a solitaire game from one stack of cards to another.
+
+The solution I use feels not very haskellish. I want to know if this is a good way to write it,
+but especially the double use of `setList` looks terrible to me.
+
+here is the code
+-}
 
 applyToEveryPair :: ((a,a) -> [(a,a)]) -> [a] -> [[a]]
 applyToEveryPair f (xs) = do i<-[0..length xs - 1]
@@ -65,15 +108,21 @@ applyToEveryPair f (xs) = do i<-[0..length xs - 1]
                              (x',y') <- f (xs !! i, xs !! j)
                              return . setList i x' . setList j y' $ xs
 
-
-moves :: Table -> [Table]
-moves = applyToEveryPair moveCols
-                             
+-- | setList n x xs replaces the nth element in xs by x
 setList :: Int -> a -> [a] -> [a]
 setList = go 0 where
     go _ _ _ [] = []
     go i n x' (x:xs) | i == n    = x':xs
                      | otherwise = x:(go (i+1) n x' xs)
+{-
+Long story, short code. I think comonads are overkill here, and I have not understood Lenses (yet),
+but have a vague feeling lenses apply here.
+http://codereview.stackexchange.com/questions/47005/replacing-every-pair-in-a-list
+-}
+
+moves :: Table -> [Table]
+moves = applyToEveryPair moveCols
+
 
 -- this function is just an exercise
 applyToEverySingle :: (a->a) -> [a] -> [[a]]
