@@ -110,10 +110,9 @@ applyToEveryPair f (xs) = do i<-[0..length xs - 1]
 
 -- | setList n x xs replaces the nth element in xs by x
 setList :: Int -> a -> [a] -> [a]
-setList = go 0 where
-    go _ _ _ [] = []
-    go i n x' (x:xs) | i == n    = x':xs
-                     | otherwise = x:(go (i+1) n x' xs)
+setList _ _ [] = []
+setList 0 x' (x:xs) = x':xs
+setList n x' (_:xs) = setList (n-1) x' xs
 {-
 Long story, short code. I think comonads are overkill here, and I have not understood Lenses (yet),
 but have a vague feeling lenses apply here.
