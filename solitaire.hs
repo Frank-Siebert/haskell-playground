@@ -1,4 +1,6 @@
 import Control.Monad (guard)
+import Control.Monad.Trans.State.Strict (State, evalState, modify, get)
+import Data.Bits (shiftR,(.&.))
 
 data Suit = Hearts | Spades | Diamonds | Clubs deriving (Show,Read,Eq,Enum)
 data Rank = Ace | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | Jack | Queen | King deriving (Show,Read,Eq,Enum,Ord)
@@ -134,3 +136,35 @@ applyToEverySingle' f (x:xs) = (map (:xs) (f x) ) ++ (map (x:) (applyToEverySing
 
 atable :: Table
 atable = [exampleColumn, [Ace :/ Hearts], [],[R2 :/ Hearts, R3 :/ Clubs], [R3 :/ Hearts, R4 :/ Hearts, R7 :/ Hearts]]
+
+-- (((holdrand = holdrand * 214013 + 2531011) >> 16) & 0x7fff)
+
+randStep :: Int -> Int
+randStep holdrand = holdrand * 214013 + 2531011
+rand :: State Int Int
+rand = do
+    modify randStep
+    x <- get
+    return $ (x `shiftR` 16) .&. 0x7fff
+
+getAnUndrawn :: [Int] -> State Int Int
+getAnUndrawn drawn = do
+    k <- rand
+    let c = k `mod` 104
+    if c `elem` drawn
+        then getAnUndrawn drawn
+        else return c
+
+shuffleAll :: Int -> [Int]
+shuffleAll rs = evalState (shuffleDeck []) rs
+
+shuffleDeck :: [Int] -> State Int [Int]
+shuffleDeck cards = do
+    if length cards /= 104
+        then do
+            k <- getAnUndrawn cards
+            shuffleDeck (k:cards)
+        else
+            return cards
+
+-- I still need a map for numbers in range(0..103) to Card
