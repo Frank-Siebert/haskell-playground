@@ -2,8 +2,8 @@ import Control.Monad (guard)
 import Control.Monad.Trans.State.Strict (State, evalState, modify, get)
 import Data.Bits (shiftR,(.&.))
 
-data Suit = Hearts | Spades | Diamonds | Clubs deriving (Show,Read,Eq,Enum)
-data Rank = Ace | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | Jack | Queen | King deriving (Show,Read,Eq,Enum,Ord)
+data Suit = Diamonds | Clubs | Hearts | Spades deriving (Show,Read,Eq,Enum,Bounded)
+data Rank = Ace | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | Jack | Queen | King deriving (Show,Read,Eq,Enum,Ord,Bounded)
 data Card = Rank :/ Suit deriving (Show,Read,Eq)
 
 type Column = [Card]
@@ -167,4 +167,6 @@ shuffleDeck cards = do
         else
             return cards
 
--- I still need a map for numbers in range(0..103) to Card
+sortedDeck = let single = [r :/ s | s<-[minBound..maxBound],
+                                    r<-[minBound..maxBound]] in single ++ single
+-- map (sortedDeck !!) $ shuffleAll 1
