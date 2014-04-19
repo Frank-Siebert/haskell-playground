@@ -6,15 +6,21 @@ data Suit = Diamonds | Clubs | Hearts | Spades deriving (Show,Read,Eq,Enum,Bound
 data Rank = Ace | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | Jack | Queen | King deriving (Show,Read,Eq,Enum,Ord,Bounded)
 data Card = Rank :/ Suit deriving (Show,Read,Eq)
 
-type Column = [Card]
+data Column = Column [Card] [Card] deriving (Show)-- hidden, open
 type Table = [Column]
 -- TODO undealt cards.
 
-lowestRun :: Column -> ([Card], [Card])
-lowestRun [] = ([],[])
-lowestRun (c:cs) = go c cs [c] where
+-- | opens card
+normalizeColumn :: Column -> Column
+normalizeColumn (Column (h:hs) []) = Column hs [h]
+normalizeColumn col = col
+
+lowestRun :: Column -> ([Card],[Card], [Card])
+lowestRun (Column [] []) = ([],[],[])
+lowestRun (Column hid (c:cs)) = go c cs [c] where
                go c' (c:cs) run | c' `fitsSuit` c = go c cs (c:run)
-               go _  cs     run               = (run,cs)  
+               go _  cs     run               = (hid,run,cs)
+lowestRun _ = error "column not normalized"
         
 fitsSuit :: Card -> Card -> Bool
 fitsSuit (r1 :/ s1) (r2 :/ s2) = s1 == s2
@@ -23,10 +29,11 @@ fits :: Card -> Card -> Bool
 fits (r1 :/ _) (r2 :/ _) = fromEnum r1 + 1 == fromEnum r2
 
 fitsColumn :: Card -> Column -> Bool
-fitsColumn _ [] = True
-fitsColumn c' (c:_) = c' `fits` c                 
+fitsColumn _ (Column [] []) = True
+fitsColumn c' (Column _ (c:_)) = c' `fits` c
+fitsColumn _ _ = error "column not normalized"
 
-exampleColumn = [x :/ Spades | x<-[Ace .. R5]] ++ [R6 :/ Hearts, King :/ Hearts, Queen :/ Diamonds]
+exampleColumn = Column [] $ [x :/ Spades | x<-[Ace .. R5]] ++ [R6 :/ Hearts, King :/ Hearts, Queen :/ Diamonds]
 
 main :: IO ()
 main = do
@@ -52,9 +59,11 @@ move = go []  where
 [] ++/ b = b
 (a:as) ++/ b = as ++/ (a:b)
 
-moveCol :: ([Card],[Card]) -> Column -> [(Column,Column)]
-moveCol ([],[]) dst = [([],dst)]
-moveCol (run,cs) dst = [(drop (length subrun) (reverse run) ++ cs,subrun ++/ dst) | subrun <- tails' run, head subrun `fitsColumn` dst]
+moveCol :: ([Card],[Card],[Card]) -> Column -> [(Column,Column)]
+moveCol ([],[],[]) dst = []
+moveCol (hid,run,cs) dstCol@(Column dsthid dst) =
+  [(Column hid (drop (length subrun) (reverse run) ++ cs),Column dsthid (subrun ++/ dst)) |
+    subrun <- tails' run, head subrun `fitsColumn` dstCol]
 
 moveCols :: (Column,Column) -> [(Column,Column)]
 moveCols (src,dst) = moveCol (lowestRun src) dst
@@ -134,8 +143,8 @@ applyToEverySingle' :: (a->[a]) -> [a] -> [[a]]
 applyToEverySingle' f [] = []
 applyToEverySingle' f (x:xs) = (map (:xs) (f x) ) ++ (map (x:) (applyToEverySingle' f xs))
 
-atable :: Table
-atable = [exampleColumn, [Ace :/ Hearts], [],[R2 :/ Hearts, R3 :/ Clubs], [R3 :/ Hearts, R4 :/ Hearts, R7 :/ Hearts]]
+--atable :: Table
+--atable = [exampleColumn, [Ace :/ Hearts], [],[R2 :/ Hearts, R3 :/ Clubs], [R3 :/ Hearts, R4 :/ Hearts, R7 :/ Hearts]]
 
 -- (((holdrand = holdrand * 214013 + 2531011) >> 16) & 0x7fff)
 
