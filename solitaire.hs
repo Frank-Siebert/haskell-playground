@@ -1,6 +1,9 @@
 import Control.Monad (guard)
 import Control.Monad.Trans.State.Strict (State, evalState, modify, get)
 import Data.Bits (shiftR,(.&.))
+import Data.List (elemIndex)
+import Data.Maybe (fromJust)
+
 
 data Suit = Diamonds | Clubs | Hearts | Spades deriving (Show,Read,Eq,Enum,Bounded)
 data Rank = Ace | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | Jack | Queen | King deriving (Show,Read,Eq,Enum,Ord,Bounded)
@@ -164,8 +167,13 @@ getAnUndrawn drawn = do
         then getAnUndrawn drawn
         else return c
 
+-- | In: randseed, out: list of randoms in sequence
 shuffleAll :: Int -> [Int]
-shuffleAll rs = evalState (shuffleDeck []) rs
+shuffleAll rs = reverse $ evalState (shuffleDeck []) rs
+
+-- something is wrong. function is its own inverse.
+unpermute :: [Int] -> [Int]
+unpermute ls = [ fromJust (elemIndex i ls) | i <- [0 .. length ls - 1]]
 
 shuffleDeck :: [Int] -> State Int [Int]
 shuffleDeck cards = do
@@ -179,3 +187,6 @@ shuffleDeck cards = do
 sortedDeck = let single = [r :/ s | s<-[minBound..maxBound],
                                     r<-[minBound..maxBound]] in single ++ single
 -- map (sortedDeck !!) $ shuffleAll 1
+
+tst = map (sortedDeck !!) . unpermute . shuffleAll $ 0x53640f95
+
