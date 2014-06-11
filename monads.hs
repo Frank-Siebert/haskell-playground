@@ -48,7 +48,7 @@ instance Monad Intree where
       Nil -> Nil -- what about left and right?
       (Node left' y right') -> Node (left >>= f) y right'  -- todo! what about left' and right?
       
-data Free m a = Return a | Bind (m (Free m a))
+data Free f a = Return a | Bind (f (Free f a))
 
 -- lift :: Monad m => m a -> t m a
 instance MonadTrans Free where
@@ -60,16 +60,16 @@ liftIO :: IO a -> Free IO a
 liftIO action = Bind (action >>= return . Return)
 
 
-instance (Functor m) => Monad (Free m) where
+instance (Functor f) => Monad (Free f) where
   return = Return
-  Return x >>= f = f x
+  Return x    >>= f = f x
   Bind action >>= f = Bind $ fmap (>>= f) action
   
 instance (Functor f) => Functor (Free f) where
   fmap f (Return x) = Return (f x)
-  fmap f (Bind x) = Bind $ fmap (fmap f) x
+  fmap f (Bind   x) = Bind $ fmap (fmap f) x
 
-instance (Applicative f) => Applicative (Free f) where
+instance (Functor f) => Applicative (Free f) where
   pure = Return
   Return f <*> x = fmap f x
   Bind   f <*> x = Bind $ fmap (<*> x) f
