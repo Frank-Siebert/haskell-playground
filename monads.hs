@@ -28,6 +28,10 @@ instance Applicative (MyState s) where
 joinState :: MyState s (MyState s a) -> MyState s a
 joinState st = MyState $ \s-> let (s', st2)=runState st s in runState st2 s'
 
+type MyState' s a = s -> (a, s)
+joinState' :: MyState' s (MyState' s a) -> MyState' s a
+joinState' st s = let (x,s') = st s in x s'
+
 if' :: Bool -> a -> a -> a
 if' True x _ = x
 if' False _ x = x
