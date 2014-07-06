@@ -25,9 +25,14 @@ instance Applicative (MyState s) where
                                (s'',x') = runState x s'
                             in (s'',f' x')
 
+instance Monad (MyState s) where
+  return = pure
+  st >>= f = MyState $ \s -> let (s', x) = runState st s in runState (f x) s'
+
 joinState :: MyState s (MyState s a) -> MyState s a
 joinState st = MyState $ \s-> let (s', st2)=runState st s in runState st2 s'
 
+-- this was the thing that went through my mind.
 type MyState' s a = s -> (a, s)
 joinState' :: MyState' s (MyState' s a) -> MyState' s a
 joinState' st s = let (x,s') = st s in x s'
