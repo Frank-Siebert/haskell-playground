@@ -13,6 +13,21 @@ instance Applicative Chain where
   pure = Chain ""
   (Chain s f) <*> (Chain s' x) = Chain (s++s') (f x)
 
+-- state just as an exercise
+newtype MyState s a = MyState {runState ::s -> (s,a)}
+
+instance Functor (MyState s) where
+  fmap f t = MyState $ \s-> let (s', x) = runState t s in (s',f x)
+
+instance Applicative (MyState s) where
+  pure x = MyState (\s-> (s,x))
+  f <*> x = MyState $ \s-> let (s',f') = runState f s
+                               (s'',x') = runState x s'
+                            in (s'',f' x')
+
+joinState :: MyState s (MyState s a) -> MyState s a
+joinState st = MyState $ \s-> let (s', st2)=runState st s in runState st2 s'
+
 if' :: Bool -> a -> a -> a
 if' True x _ = x
 if' False _ x = x
