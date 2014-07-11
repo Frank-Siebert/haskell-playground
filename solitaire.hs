@@ -9,9 +9,28 @@ data Suit = Clubs | Diamonds | Hearts | Spades deriving (Show,Read,Eq,Enum,Bound
 data Rank = Ace | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | Jack | Queen | King deriving (Show,Read,Eq,Enum,Ord,Bounded)
 data Card = Rank :/ Suit deriving (Show,Read,Eq)
 
+type Cards = [Card]
 data Column = Column [Card] [Card] deriving (Show)-- hidden, open
 type Table = [Column]
 -- TODO undealt cards.
+
+data GameState = GameState {
+                     table :: Table,
+                     undealt :: Cards }
+                     
+dealHiddenCards :: Cards -> GameState
+dealHiddenCards = go 44 0 (replicate 10 []) where
+               go :: Int -> Int -> [[Card]] -> Cards -> GameState
+               go 0 _ cols cards = GameState { table = map (\x -> Column x []) cols, undealt = cards }
+               go n colIndex cols (card:cards) = go (n-1) (colIndex+1 `rem` 10) cols cards
+               
+-- | deals a row of open cards. Can be used initially and in subsequent dealings.
+dealOpenCards :: GameState -> GameState
+dealOpenCards = go 0 where
+               go 11 state = state
+               go colIndex state = let (card:cards) = undealt state
+                    in go (colIndex+1) (GameState { table = modList colIndex (\(Column h op)->Column h (card:op)) (table state), undealt = cards})
+-- the above will be hard to understand tomorrow!
 
 -- | opens card
 normalizeColumn :: Column -> Column
@@ -124,9 +143,13 @@ applyToEveryPair f (xs) = do i<-[0..length xs - 1]
 
 -- | setList n x xs replaces the nth element in xs by x
 setList :: Int -> a -> [a] -> [a]
-setList _ _ [] = []
-setList 0 x' (x:xs) = x':xs
-setList n x' (_:xs) = setList (n-1) x' xs
+setList n x = modList n (const x)
+
+modList :: Int -> (a -> a) -> [a] -> [a]
+modList _ _ [] = []
+modList 0 f (x:xs) = f x : xs
+modList n f (x:xs) =   x : modList (n-1) f xs
+
 {-
 Long story, short code. I think comonads are overkill here, and I have not understood Lenses (yet),
 but have a vague feeling lenses apply here.
