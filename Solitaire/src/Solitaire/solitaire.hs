@@ -1,3 +1,5 @@
+module Solitaire.Solitaire where
+
 import Control.Monad (guard)
 import Control.Monad.Trans.State.Strict (State, evalState, modify, get)
 import Data.Bits (shiftR,(.&.))
