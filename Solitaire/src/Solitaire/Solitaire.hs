@@ -13,7 +13,7 @@ dealHiddenCards :: Cards -> GameState
 dealHiddenCards = go 44 0 (replicate 10 []) where
                go :: Int -> Int -> [[Card]] -> Cards -> GameState
                go 0 _ cols cards = GameState { table = map (\x -> Column x []) cols, undealt = cards }
-               go n colIndex cols (card:cards) = go (n-1) (colIndex+1 `rem` 10) cols cards
+               go n colIndex cols (card:cards) = go (n-1) ((colIndex+1) `rem` 10) (modList colIndex (card:) cols) cards
                
 -- | deals a row of open cards. Can be used initially and in subsequent dealings.
 dealOpenCards :: GameState -> GameState
