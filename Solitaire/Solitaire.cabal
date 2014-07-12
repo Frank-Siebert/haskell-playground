@@ -51,5 +51,5 @@ executable Solitaire
   -- other-modules:       
   
   -- Other library packages from which modules are imported.
-  build-depends:       base ==4.6.*
+  build-depends:       base ==4.6.*, transformers >= 0.3.0.0
   
