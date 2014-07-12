@@ -6,4 +6,4 @@ import Solitaire.Display
 
 main :: IO ()
 main = do
-    putStr $ displayHtml gs
+    putStr $ displayHtml (displayGameState gs)
