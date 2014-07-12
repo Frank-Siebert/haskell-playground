@@ -13,10 +13,10 @@ displayGameState (GameState cols undealt) = tag "table" .
                                    concatMap displayCol cols
 
 displayCol :: Column -> String
-displayCol (Column hidden open) = displayCards (reverse hidden) ++ displayCards (reverse open)
+displayCol (Column hidden open) = tag "td"  $ displayCards (reverse hidden) ++ displayCards (reverse open)
 
 displayCards :: Cards -> String
-displayCards cards = concatMap (tag "td" . displayCard) cards
+displayCards cards = concatMap displayCard cards
 
 displayCard :: Card -> String
 displayCard c = "<div class=\"card\"><img src=\"file://localhost/K:/protected/poker/"++name c++".png\"></div>"

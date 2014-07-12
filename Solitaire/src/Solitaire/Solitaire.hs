@@ -198,7 +198,7 @@ sortedDeck = let single = [r :/ s | s<-[minBound..maxBound],
                                     r<-[minBound..maxBound]] in single ++ single
 -- map (sortedDeck !!) $ shuffleAll 1
 
-tst = map (sortedDeck !!) . unpermute . shuffleAll $ 0x4603970b
+tst = map (sortedDeck !!) . unpermute . shuffleAll $ 0x53bff7f1
 
 gs :: GameState
 gs = dealOpenCards $ dealHiddenCards tst
