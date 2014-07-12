@@ -43,6 +43,7 @@ cabal-version:       >=1.8
 
 
 executable Solitaire
+  hs-source-dirs:  src
   -- .hs or .lhs file containing the Main module.
   -- main-is:             
   
