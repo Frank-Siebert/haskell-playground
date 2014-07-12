@@ -1,4 +1,6 @@
 import Solitaire.Solitaire
 
 main :: IO ()
-main = putStrLn "nothing!"
+main = do
+    print $ exampleColumn
+    print $ lowestRun exampleColumn

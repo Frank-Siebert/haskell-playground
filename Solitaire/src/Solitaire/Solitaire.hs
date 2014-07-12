@@ -59,11 +59,6 @@ fitsColumn _ _ = error "column not normalized"
 
 exampleColumn = Column [] $ [x :/ Spades | x<-[Ace .. R5]] ++ [R6 :/ Hearts, King :/ Hearts, Queen :/ Diamonds]
 
-main :: IO ()
-main = do
-    print $ exampleColumn
-    print $ lowestRun exampleColumn
-
 tails':: [a] -> [[a]]
 tails' = go [] where
     go accum [] = accum
