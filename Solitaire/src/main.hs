@@ -1,6 +1,9 @@
+import Solitaire.Data
 import Solitaire.Solitaire
+import Solitaire.Display
+
+
 
 main :: IO ()
 main = do
-    print $ exampleColumn
-    print $ lowestRun exampleColumn
+    putStr $ displayHtml gs

@@ -6,20 +6,9 @@ import Data.Bits (shiftR,(.&.))
 import Data.List (elemIndex)
 import Data.Maybe (fromJust)
 
+import Solitaire.Data
 
-data Suit = Clubs | Diamonds | Hearts | Spades deriving (Show,Read,Eq,Enum,Bounded)
-data Rank = Ace | R2 | R3 | R4 | R5 | R6 | R7 | R8 | R9 | R10 | Jack | Queen | King deriving (Show,Read,Eq,Enum,Ord,Bounded)
-data Card = Rank :/ Suit deriving (Show,Read,Eq)
 
-type Cards = [Card]
-data Column = Column [Card] [Card] deriving (Show)-- hidden, open
-type Table = [Column]
--- TODO undealt cards.
-
-data GameState = GameState {
-                     table :: Table,
-                     undealt :: Cards }
-                     
 dealHiddenCards :: Cards -> GameState
 dealHiddenCards = go 44 0 (replicate 10 []) where
                go :: Int -> Int -> [[Card]] -> Cards -> GameState
@@ -211,3 +200,5 @@ sortedDeck = let single = [r :/ s | s<-[minBound..maxBound],
 
 tst = map (sortedDeck !!) . unpermute . shuffleAll $ 0x4603970b
 
+gs :: GameState
+gs = dealOpenCards $ dealHiddenCards tst
