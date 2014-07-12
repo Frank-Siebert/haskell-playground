@@ -70,7 +70,7 @@ move = go []  where
 moveCol :: ([Card],[Card],[Card]) -> Column -> [(Column,Column)]
 moveCol ([],[],[]) dst = []
 moveCol (hid,run,cs) dstCol@(Column dsthid dst) =
-  [(Column hid (drop (length subrun) (reverse run) ++ cs),Column dsthid (subrun ++/ dst)) |
+  [(normalizeColumn$Column hid (drop (length subrun) (reverse run) ++ cs),Column dsthid (subrun ++/ dst)) |
     subrun <- tails' run, head subrun `fitsColumn` dstCol]
 
 moveCols :: (Column,Column) -> [(Column,Column)]
