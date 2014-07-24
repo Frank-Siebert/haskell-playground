@@ -12,7 +12,7 @@ import Solitaire.Data
 dealHiddenCards :: Cards -> GameState
 dealHiddenCards = go 44 0 (replicate 10 []) where
                go :: Int -> Int -> [[Card]] -> Cards -> GameState
-               go 0 _ cols cards = GameState { table = map (\x -> Column x []) cols, undealt = cards }
+               go 0 _        cols       cards  = GameState { table = map (\x -> Column x []) cols, undealt = cards }
                go n colIndex cols (card:cards) = go (n-1) ((colIndex+1) `rem` 10) (modList colIndex (card:) cols) cards
                
 -- | deals a row of open cards. Can be used initially and in subsequent dealings.
@@ -23,11 +23,12 @@ dealOpenCards = go 0 where
                     in go (colIndex+1) (GameState { table = modList colIndex (\(Column h op)->Column h (card:op)) (table state), undealt = cards})
 -- the above will be hard to understand tomorrow!
 
--- | opens card
+-- | opens card if the topmost card is hidden
 normalizeColumn :: Column -> Column
 normalizeColumn (Column (h:hs) []) = Column hs [h]
 normalizeColumn col = col
 
+-- | processes a Column to have all cards that can be moved (i.e. fitsSuit) at once in the second part of the triple. That run is reversed.
 lowestRun :: Column -> ([Card],[Card], [Card])
 lowestRun (Column [] []) = ([],[],[])
 lowestRun (Column hid (c:cs)) = go c cs [c] where
@@ -46,8 +47,7 @@ fitsColumn _ (Column [] []) = True
 fitsColumn c' (Column _ (c:_)) = c' `fits` c
 fitsColumn _ _ = error "column not normalized"
 
-exampleColumn = Column [] $ [x :/ Spades | x<-[Ace .. R5]] ++ [R6 :/ Hearts, King :/ Hearts, Queen :/ Diamonds]
-
+-- | like tails, but without including the empty list []. If the input is [], the output will be [] (no tail). Contrast with Data.List.tails [] = [[]].
 tails':: [a] -> [[a]]
 tails' = go [] where
     go accum [] = accum

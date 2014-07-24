@@ -7,7 +7,6 @@ data Card = Rank :/ Suit deriving (Show,Read,Eq)
 type Cards = [Card]
 data Column = Column [Card] [Card] deriving (Show)-- hidden, open
 type Table = [Column]
--- TODO undealt cards.
 
 data GameState = GameState {
                      table :: Table,
