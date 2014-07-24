@@ -20,7 +20,7 @@ displayCards :: Cards -> String
 displayCards cards = concatMap displayCard cards
 
 displayCard :: Card -> String
-displayCard c = "<div class=\"card\"><img src=\"file://localhost/K:/protected/poker/"++name c++".png\"></div>"
+displayCard c = "<div class=\"card\"><img src=\"img/"++name c++".png\"></div>"
 
 tag :: String -> String -> String
 tag t payload = "<"++t++">"++payload++"</"++t++">\n"
