@@ -59,7 +59,7 @@ init = Chain "" ()
 instance Functor Chain where
   fmap f (Chain s x) = (Chain s (f x))
 
-data Intree a = Nil | Node (Intree a) a (Intree a)
+data Intree a = Nil | Node (Intree a) a (Intree a) deriving (Show, Read, Eq)
 
 instance Functor Intree where
   fmap _ Nil = Nil
