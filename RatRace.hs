@@ -1,6 +1,9 @@
+{-# Language DeriveFunctor #-}
+
 import System.Random
 import Control.Monad.State
 import Control.Applicative
+import Control.Comonad
 
 genomeLength :: Int
 genomeLength = 100
@@ -59,5 +62,29 @@ mutateGenome (g:gs) = do c <- getRandom
 main :: IO ()
 main = newStdGen >>= print  . evalState randomGenome
 
+data U a = U [a] a [a] deriving (Show,Eq,Functor)
+data U2 a = U2 (U (U a))
 
+rightU :: U a -> Maybe (U a)
+rightU (U _ _ []) = Nothing
+rightU (U ls x (r:rs)) = Just (U (x:ls) r rs)
+
+leftU :: U a -> Maybe (U a)
+leftU (U [] _ _) = Nothing
+leftU (U (l:ls) x rs) = Just (U ls l (x:rs))
+
+iterateU :: (U a -> Maybe (U a)) -> U a -> [U a]
+iterateU f z = case f z of
+                Nothing -> []
+                Just z' -> z':iterateU f z'
+
+rightUs :: U a -> [U a]
+rightUs = iterateU rightU
+
+leftUs :: U a -> [U a]
+leftUs =iterateU leftU
+
+instance Comonad U where
+    extract (U _ x _) = x
+    duplicate z@(U ls _ rs) = (U undefined z undefined) 
 
