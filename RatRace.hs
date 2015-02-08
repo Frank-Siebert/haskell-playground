@@ -18,7 +18,7 @@ genomeFlipChance = 0.01
 type Genome = [Bool]
 type Color = Int
 
-type Vision = [[Color]]
+type Vision = U2 Color
 
 data Move = StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest
 
@@ -63,7 +63,6 @@ main :: IO ()
 main = newStdGen >>= print  . evalState randomGenome
 
 data U a = U [a] a [a] deriving (Show,Eq,Functor)
-data U2 a = U2 (U (U a))
 
 rightU :: U a -> Maybe (U a)
 rightU (U _ _ []) = Nothing
@@ -86,5 +85,27 @@ leftUs =iterateU leftU
 
 instance Comonad U where
     extract (U _ x _) = x
-    duplicate z@(U ls _ rs) = (U undefined z undefined) 
+    duplicate z = U (leftUs z) z (rightUs z)
+
+newtype U2 a = U2 (U (U a)) deriving (Show,Eq,Functor)
+
+instance Comonad U2 where
+    extract (U2 u) = extract . extract $ u
+    duplicate (U2 u) = fmap U2 . U2 . duplicate . duplicate $ u
+
+listU :: ([a] -> [a]) -> U a -> U a
+listU f (U ls x rs) = U (f ls) x (f rs)
+
+-- a real listU2 function would need higher rank:
+--(forall a.[a] -> [a]) -> U2 a -> U2 a
+takeU2 :: Int -> U2 a -> U2 a
+takeU2 n (U2 (U ls x rs)) = U2 . fmap (listU (take n)) $ U (take n ls) x (take n rs)
+
+fromListU :: [a] -> U a
+fromListU (x:xs) = U [] x xs
+fromListU _ = error "fromListU: Empty list"
+
+fromListU2 :: [[a]] -> U2 a
+fromListU2 (x:xs) = U2 (U [] (fromListU x) (map fromListU xs))
+fromListU2 _ = error "fromListU2: Empty list"
 
