@@ -72,16 +72,16 @@ leftU :: U a -> Maybe (U a)
 leftU (U [] _ _) = Nothing
 leftU (U (l:ls) x rs) = Just (U ls l (x:rs))
 
-iterateU :: (U a -> Maybe (U a)) -> U a -> [U a]
-iterateU f z = case f z of
+iterateMaybe :: (a -> Maybe a) -> a -> [a]
+iterateMaybe f z = case f z of
                 Nothing -> []
-                Just z' -> z':iterateU f z'
+                Just z' -> z':iterateMaybe f z'
 
 rightUs :: U a -> [U a]
-rightUs = iterateU rightU
+rightUs = iterateMaybe rightU
 
 leftUs :: U a -> [U a]
-leftUs =iterateU leftU
+leftUs =iterateMaybe leftU
 
 instance Comonad U where
     extract (U _ x _) = x
