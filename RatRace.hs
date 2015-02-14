@@ -42,6 +42,7 @@ getRandom = do (x,g) <- (random <$> get)
                put g
                return x
 
+getRandomR :: (Random a) => (a,a) -> Rand a
 getRandomR range = do (x,g) <- (randomR range <$> get)
                       put g
                       return x
@@ -57,7 +58,7 @@ mixGenome mother father = do coin <- getRandom
                                    then (mother,father)
                                    else (father,mother))
                           where
-                             mix ([],[]) = return []
+                             mix ([],recessive) = return recessive
                              mix (d:ominant,recessive) = (d:) <$>
                                      do x <- getRandom
                                         mix (if (x < genomeChangeChance)
@@ -165,11 +166,13 @@ shuffle xs = go (length xs) xs where
                           res <- go (n-1) remainder
                           return $ (as!!i):res
 
+{- orphan, I do not really need you
 instance (Random a, Random b) => Random (a,b) where
     random g = let (a,g' ) = random g
                    (b,g'') = random g' in ((a,b),g'')
     randomR ((la,lb),(ha,hb)) g = let (a,g' ) = randomR (la,ha) g
                                       (b,g'') = randomR (lb,hb) g' in ((a,b),g'')
+-}
 
 data FullCell = FullCell {
    vision :: U2 Color,

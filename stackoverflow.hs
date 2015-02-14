@@ -29,7 +29,7 @@ instance Comonad U where
 
 
 data FullCell = FullCell {
-   vision   :: Int,
+   vision   :: [[Int]],
    move     :: Int -> Maybe FullCell -- tie the knot here!
 }
 
@@ -42,18 +42,18 @@ tieKnot u = u =>> (\z -> FullCell {
          move'   1  = Just undefined -- tie the knot to neighbor here
          move' (-1) = Just undefined -- ...
          move'   _  = Nothing
-         limitTo5x5 = extract -- simplified for SO
+         limitTo5x5 = undefined -- not of interest, but the real reason why a comonad is used
 
 type MT a = Maybe (T a) -- dont export
 data T a = T (Maybe (T a)) a (Maybe (T a))
 
 tie :: U a -> T a
-tie   (U ls x rs) = let center = T (tieLeft ls jcenter) x (tieRight rs jcenter)
+tie   (U ul x ur) = let center = T (tieLeft ul jcenter) x (tieRight ur jcenter)
                         jcenter = Just center
                         tieLeft  :: [a] -> Maybe (T a) -> Maybe (T a)
-                        tieLeft [] right = Nothing
+                        tieLeft []     _     = Nothing
                         tieLeft (l:ls) right = let this = Just $ T (tieLeft ls this) l right in this
                         tieRight :: [a] -> Maybe (T a) -> Maybe (T a)
-                        tieRight [] left = Nothing
+                        tieRight []     _    = Nothing
                         tieRight (r:rs) left = let this = Just $ T left r (tieRight rs this) in this
                      in center
