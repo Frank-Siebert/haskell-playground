@@ -1,4 +1,17 @@
-module FsTree where
+module FsTree (
+             Tree(..),
+             takeTree,
+             repTree,
+             foldTree,
+             mapTree,
+             mapTree2,
+             myTree,
+             height,
+             lengthTree,
+             leaves
+) where
+
+type IsExported = Int
 
 data Tree payload = Tree payload [Tree payload]
   --deriving Show
