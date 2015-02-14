@@ -45,7 +45,8 @@ tieKnot u = u =>> (\z -> FullCell {
          limitTo5x5 = undefined -- not of interest, but the real reason why a comonad is used
 
 type MT a = Maybe (T a) -- dont export
-data T a = T (Maybe (T a)) a (Maybe (T a))
+--data T a = T { (Maybe (T a)) a (Maybe (T a)) }
+data T a = T { leftT :: MT a, payloadT :: a, rightT :: MT a }
 
 tie :: U a -> T a
 tie   (U ul x ur) = let center = T (tieLeft ul jcenter) x (tieRight ur jcenter)
@@ -57,3 +58,9 @@ tie   (U ul x ur) = let center = T (tieLeft ul jcenter) x (tieRight ur jcenter)
                         tieRight []     _    = Nothing
                         tieRight (r:rs) left = let this = Just $ T left r (tieRight rs this) in this
                      in center
+
+unTie :: T a -> U a
+unTie x = U (iterateT leftT x) (payloadT x) (iterateT rightT x) where
+    iterateT f t = case f t of
+        Nothing -> []
+        Just t' -> payloadT t' : iterateT f t'
