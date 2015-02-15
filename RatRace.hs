@@ -178,11 +178,11 @@ instance (Random a, Random b) => Random (a,b) where
 -}
 
 data FullCell = FullCell {
-   vision :: U2 Color,
-   next   :: Maybe FullCell, -- Nothing means specimen dies
+   vision   :: U2 Color,
+   nextCell :: Maybe FullCell, -- Nothing means specimen dies
    position :: Position,
    cellType :: Cell,
-   move     :: Move -> Maybe (U2 FullCell)
+   move     :: Move -> Maybe (U2Graph FullCell)
 }
 
 iter :: (Monad m) => Int -> (a -> m a) -> a -> m a
@@ -202,14 +202,15 @@ moveFocus :: Position -> U2 a -> Maybe (U2 a)
 --moveFocus (x,y) (U2 u) = U2 <$> sgnToMove y u
 moveFocus (x,y) (U2 u) = U2 <$> ( upMaybeU . (fmap (sgnToMove x)) =<< sgnToMove y u)
 
---buildFullCell :: [Cell] -> U2 (Position,Color) -> U2 FullCell
-buildFullCell cards track = let result = track =>> (\x -> let color = snd $ extract x
-                                                              cell  = cards !! color
-                                                              tmp   = takeU2 2 x
-                                                              vis   = snd <$> tmp
-                                                              pos   = fst $ extract x
-                                                          in (vis, pos, cell{-,result)-}))
-                             in result
+buildFullCell :: [Cell] -> U2 (Position,Color) -> U2Graph FullCell
+buildFullCell cards track = toU2GraphW b track where
+    b this u = FullCell {
+        vision   = snd <$> (takeU2 2 u),
+        nextCell = Nothing, -- TODO
+        position = fst $ extract u,
+        cellType = cards !! (snd $ extract u),
+        move     = undefined
+    }
 
 data U2Graph a = U2Graph {
     _down2  :: Maybe (U2Graph a),
@@ -217,26 +218,29 @@ data U2Graph a = U2Graph {
     _here2  :: a,
     _right2 :: Maybe (U2Graph a),
     _up2    :: Maybe (U2Graph a)
-    }
+}
 
 square :: U2 Char
 square = fromListU2 ["ab","cd"]
 
+
 -- from http://stackoverflow.com/questions/28516819/tying-the-knot-with-a-comonad
---toU2Graph :: ((U2Graph b) -> a -> b) -> U2 a -> U2Graph b
-toU2Graph :: U2 a -> U2Graph a
-toU2Graph (U2 (U ls (U ds h us) rs)) = g
+toU2Graph :: (U2Graph b -> a -> b) -> U2 a -> U2Graph b
+toU2Graph c (U2 (U ls (U ds h us) rs)) = g
     where
-        g = U2Graph (build u2down g ds) (build u2left g ls) h (build u2right g rs) (build u2up g us)
+        g = U2Graph (build u2down g ds) (build u2left g ls) (c g h) (build u2right g rs) (build u2up g us)
         build f _    []          = Nothing
         build f prev (here:next) = Just g
             where
                 g = f (Just prev) here (build f g next)
-        u2up   d h u = U2Graph d (d >>= _left2 >>= _up2  ) h (d >>= _right2 >>= _up2  ) u
-        u2down u h d = U2Graph d (u >>= _left2 >>= _down2) h (u >>= _right2 >>= _down2) u
+        u2up   d h u = let g' = U2Graph d (d >>= _left2 >>= _up2  ) (c g' h) (d >>= _right2 >>= _up2  ) u in g'
+        u2down u h d = let g' = U2Graph d (u >>= _left2 >>= _down2) (c g' h) (u >>= _right2 >>= _down2) u in g'
         u2left r (U ds h us) l = g
             where
-                g = U2Graph (build u2down g ds) l h r (build u2up g us)
+                g = U2Graph (build u2down g ds) l (c g h) r (build u2up g us)
         u2right l (U ds h us) r = g
             where
-                g = U2Graph (build u2down g ds) l h r (build u2up g us)
+                g = U2Graph (build u2down g ds) l (c g h) r (build u2up g us)
+
+toU2GraphW :: (U2Graph b -> U2 a -> b) -> U2 a -> U2Graph b
+toU2GraphW f u = toU2Graph f (duplicate u)
