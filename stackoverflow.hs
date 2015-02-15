@@ -30,22 +30,23 @@ instance Comonad U where
 
 data FullCell = FullCell {
    vision   :: [[Int]],
-   move     :: Int -> Maybe FullCell -- tie the knot here!
+   move     :: Int -> Maybe (U FullCell) -- tie the knot here!
 }
 
 
 tieKnot :: U Int -> U FullCell
-tieKnot u = u =>> (\z -> FullCell {
-      vision = limitTo5x5 z,
-      move = move'
-})  where
-         move'   1  = Just undefined -- tie the knot to neighbor here
-         move' (-1) = Just undefined -- ...
-         move'   _  = Nothing
-         limitTo5x5 = undefined -- not of interest, but the real reason why a comonad is used
+tieKnot u = let result = u =>> (\z -> FullCell {
+                                   vision = limitTo5x5 z,
+                                   move = move'
+                              })
+                move'   1  = Just undefined -- tie the knot to neighbor here
+                move' (-1) = rightU result -- WRONG: Now result is centered initial focus
+                move'   _  = Nothing
+                limitTo5x5 = undefined -- not of interest, but the real reason why a comonad is used
+    in result
 
 type MT a = Maybe (T a) -- dont export
---data T a = T { (Maybe (T a)) a (Maybe (T a)) }
+--data T a = T (Maybe (T a)) a (Maybe (T a))
 data T a = T { leftT :: MT a, payloadT :: a, rightT :: MT a }
 
 tie :: U a -> T a
