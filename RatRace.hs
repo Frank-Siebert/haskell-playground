@@ -1,6 +1,7 @@
 {-# Language DeriveFunctor #-}
 
 import Control.Applicative
+import Control.Arrow (second)
 import Control.Monad.State
 import Control.Comonad
 import Data.Maybe (catMaybes)
@@ -203,16 +204,21 @@ buildFullCell :: [Cell] -> U2 (Position,Color) -> U2Graph FullCell
 buildFullCell cards track = toU2GraphW b track where
     b this u = FullCell {
         vision   = snd <$> (takeU2 2 u),
-        nextCell = nc,
-        position = fst $ extract u,
+        nextCell = if trap then Nothing else nc,
+        position = pos,
         cellType = ct,
         move     = undefined
     } where
         ct = cards !! (snd $ extract u)
-        nc = case ct of -- TODO check neighbors for traps
+        pos = fst $ extract u
+        nc = case ct of
             Wall           -> Nothing
             Teleporter x y -> moveFocus (x,y) this
             _              -> Just this
+        trap = any checkTrap . map (second (cards !!)) . concat . listFromU2 . takeU2 1 $ u
+        checkTrap ((x,y),Trap dx dy) = x + dx == fst pos && y + dy == snd pos
+        checkTrap _ = False
+
 
 data U2Graph a = U2Graph {
     _down2  :: Maybe (U2Graph a),
