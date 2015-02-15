@@ -127,6 +127,12 @@ fromListU2 :: [[a]] -> U2 a
 fromListU2 (x:xs) = U2 (U [] (fromListU x) (map fromListU xs))
 fromListU2 _ = error "fromListU2: Empty list"
 
+listFromU :: U a -> [a]
+listFromU (U ls x rs) = reverse ls ++ (x:rs)
+
+listFromU2 :: U2 a -> [[a]]
+listFromU2 (U2 u) = map listFromU (listFromU u)
+
 ----- below here controller only
 
 type Position = (Int,Int)
@@ -136,7 +142,7 @@ data Cell = Wall | Teleporter Int Int | Trap Int Int deriving (Eq,Show)
 emptyCell :: Cell
 emptyCell = Teleporter 0 0
 
-data Specimen = Specimen { genome :: Genome, completedRuns :: Int } --
+data Specimen = Specimen { genome :: Genome, completedRuns :: Int, age :: Int } --
 
 generateRaceTrack :: Rand (U2 (Position,Color))
 generateRaceTrack = fromListU2 . addPos <$> replicateM raceTrackWidth (replicateM raceTrackLength generateColor)
@@ -152,8 +158,8 @@ generateColor = do (x,g) <- randomR (0,15) <$> get
 generateCells :: Rand [Cell]
 generateCells = do te1 <- genCell Teleporter 4
                    te2 <- genCell Teleporter 4
-                   tr1 <- genCell Trap 4
-                   tr2 <- genCell Trap 4
+                   tr1 <- liftM2 Trap (getRandomR (-1,1)) (getRandomR (-1,1))
+                   tr2 <- liftM2 Trap (getRandomR (-1,1)) (getRandomR (-1,1))
                    shuffle $ [Wall,Wall,te1,te2,tr1,tr2]++replicate 8 emptyCell where
            genCell ctor r = dropWhileM (==ctor 0 0) $ liftM2 ctor (getRandomR (-r,r)) (getRandomR (-r,r))
 
@@ -179,38 +185,34 @@ instance (Random a, Random b) => Random (a,b) where
 
 data FullCell = FullCell {
    vision   :: U2 Color,
-   nextCell :: Maybe FullCell, -- Nothing means specimen dies
+   nextCell :: Maybe (U2Graph FullCell), -- Nothing means specimen dies
    position :: Position,
    cellType :: Cell,
    move     :: Move -> Maybe (U2Graph FullCell)
 }
 
-iter :: (Monad m) => Int -> (a -> m a) -> a -> m a
-iter 0 _ = return
-iter n f = f >=> iter (n-1) f
+iter :: (Monad m) => Int -> (a -> m a) -> (a -> m a) -> a -> m a
+iter n f g | n > 0     = g >=> iter (n-1) f g
+           | n < 0     = f >=> iter (n-1) f g
+           | otherwise = return
 
-sgnToMove :: Int -> U a -> Maybe (U a)
-sgnToMove 0 = Just
-sgnToMove x | x > 0 = iter   x rightU
-sgnToMove x | x < 0 = iter (-x) leftU
-
-upMaybeU :: U (Maybe a) -> Maybe (U a)
-upMaybeU (U _ Nothing _) = Nothing
-upMaybeU (U ls (Just x) rs) = Just (U (catMaybes ls) x (catMaybes rs))
-
-moveFocus :: Position -> U2 a -> Maybe (U2 a)
---moveFocus (x,y) (U2 u) = U2 <$> sgnToMove y u
-moveFocus (x,y) (U2 u) = U2 <$> ( upMaybeU . (fmap (sgnToMove x)) =<< sgnToMove y u)
+moveFocus :: Position -> U2Graph a -> Maybe (U2Graph a)
+moveFocus (x,y) = iter x _left2 _right2 >=> iter y _down2 _up2
 
 buildFullCell :: [Cell] -> U2 (Position,Color) -> U2Graph FullCell
 buildFullCell cards track = toU2GraphW b track where
     b this u = FullCell {
         vision   = snd <$> (takeU2 2 u),
-        nextCell = Nothing, -- TODO
+        nextCell = nc,
         position = fst $ extract u,
-        cellType = cards !! (snd $ extract u),
+        cellType = ct,
         move     = undefined
-    }
+    } where
+        ct = cards !! (snd $ extract u)
+        nc = case ct of -- TODO check neighbors for traps
+            Wall           -> Nothing
+            Teleporter x y -> moveFocus (x,y) this
+            _              -> Just this
 
 data U2Graph a = U2Graph {
     _down2  :: Maybe (U2Graph a),
