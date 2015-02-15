@@ -60,8 +60,22 @@ tie   (U ul x ur) = let center = T (tieLeft ul jcenter) x (tieRight ur jcenter)
                         tieRight (r:rs) left = let this = Just $ T left r (tieRight rs this) in this
                      in center
 
+tie' :: [a] -> T a
+tie' xs = let tmp = [T (safeIndex (i-1)) (xs !! i) (safeIndex (i+1))| i <-[0..n]]
+              n   = length xs - 1
+              safeIndex i | i < 0 = Nothing
+                          | i > n = Nothing
+                          | otherwise = Just (tmp !! i)
+           in head tmp
+
 unTie :: T a -> U a
 unTie x = U (iterateT leftT x) (payloadT x) (iterateT rightT x) where
     iterateT f t = case f t of
         Nothing -> []
         Just t' -> payloadT t' : iterateT f t'
+
+
+com :: Int -> [a] -> [[a]]
+com 0 ls = [[]]
+--com 1 ls = [[x] | x <- ls]
+com n ls = [ x : shorter | x <- ls, shorter <- com (n - 1) ls ]
