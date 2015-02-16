@@ -29,7 +29,7 @@ type Color = Int
 
 type Vision = U2 Color
 
-data Move = StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest
+data Move = StandStill | North | NorthEast | East | SouthEast | South | SouthWest | West | NorthWest deriving (Enum)
 
 
 type Player = Genome -> (StdGen -> Vision -> Move)

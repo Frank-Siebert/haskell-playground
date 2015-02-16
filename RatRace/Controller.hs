@@ -4,7 +4,10 @@ import Control.Applicative
 import Control.Arrow (second)
 import Control.Monad.State
 import Control.Comonad
+import Data.Graph.AStar (aStar)
 import Data.Maybe (catMaybes)
+import Data.Ord (comparing)
+import qualified Data.Set as Set (Set,fromList)
 import System.Random
 
 import RatRace
@@ -135,3 +138,12 @@ toU2Graph c (U2 (U ls (U ds h us) rs)) = g
 
 toU2GraphW :: (U2Graph b -> U2 a -> b) -> U2 a -> U2Graph b
 toU2GraphW f u = toU2Graph f (duplicate u)
+
+-- instance declarations to put them in Set.Set for aStar
+instance Eq FullCell where
+   a == b = position a == position b
+instance Ord FullCell where
+   compare = comparing position
+
+neighbors :: FullCell -> Set.Set FullCell
+neighbors c = Set.fromList . map _here2 . catMaybes . map (move c) $ [North .. NorthWest]
