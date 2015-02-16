@@ -1,4 +1,5 @@
 {-# Language DeriveFunctor #-}
+module RatRace where
 
 import Control.Applicative
 import Control.Arrow (second)
