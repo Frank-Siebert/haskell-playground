@@ -136,8 +136,25 @@ executeStepwise monads = executeStepwise' (monads,[]) >> return () where
 -- todo: still swaps order, so we get 1, 1', 2', 2, 3, 3',...
 -- use something more elegant than reverse
 
+roundRobin :: (Monad m) => [Free m ()] -> m ()
+roundRobin [] = return ()
+roundRobin (Return    _:ms) = roundRobin ms
+roundRobin (Bind action:ms) = do next <- action
+                                 roundRobin (ms ++ [next])
+
 threads :: [Free IO ()]
 threads = [sequence_ [liftIO (putStrLn $ "Thread "++(c:" step "++ show n)) | n<-[1..4]] | c <- ['A'..'D']]
 
 applThread :: Free IO ()
 applThread = lift (putStrLn "Hallo") *> lift (putStrLn "Welt")
+
+foo = do x <- [1..4]
+         y <- [2,3]
+         return x
+         return (x*y)
+
+fibs :: [Integer]
+fibs = 0:1:zipWith (+) fibs (tail fibs)
+
+x :: Int
+x = x + 1
