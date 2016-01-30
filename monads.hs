@@ -59,19 +59,6 @@ init = Chain "" ()
 instance Functor Chain where
   fmap f (Chain s x) = (Chain s (f x))
 
-data Intree a = Nil | Node (Intree a) a (Intree a) deriving (Show, Read, Eq)
-
-instance Functor Intree where
-  fmap _ Nil = Nil
-  fmap f (Node left x right) = Node (fmap f left) (f x) (fmap f right)
-  
-instance Monad Intree where
-  return x = Node Nil x Nil
-  Nil >>= f = Nil
-  (Node left x right) >>= f = case f x of
-      Nil -> Nil -- what about left and right?
-      (Node left' y right') -> Node (left >>= f) y right'  -- todo! what about left' and right?
-      
 data Free f a = Return a | Bind (f (Free f a))
 
 -- lift :: Monad m => m a -> t m a
