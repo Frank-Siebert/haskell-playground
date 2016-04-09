@@ -12,6 +12,19 @@ type List a = Fix (ListF a)
 toList []     = Fix NilF
 toList (x:xs) = Fix (ConsF x (toList xs))
 
+foldList,foldList3 :: (a -> b -> b) -> b -> List a -> b
+foldList2 f z (Fix NilF) = z
+foldList2 f z (Fix (ConsF x xs)) = f x (foldList f z xs)
+
+foldList f z list = case list of
+              (Fix NilF) -> z
+              (Fix (ConsF x xs)) -> f x (foldList f z xs)
+
+foldList3 = fix
+      (\v f z list -> case list of
+              (Fix NilF) -> z
+              (Fix (ConsF x xs)) -> f x (v f z xs))
+
 asc :: [Int]
 asc = asc' 0 where asc' n = n:asc' (n+1)
 
@@ -27,14 +40,14 @@ to101 = fix f 0 where
 to100' = to100'' 0 where
          to100'' y | y <= 100  = y:to100'' (y+1)
                    | otherwise = []
-                   
+
 myFoldr f z [] = z
 myFoldr f z (x:xs) = f x (myFoldr f z xs)
 
 myFoldr' f z xs = fix f' z xs where
         f' _ z []     = z
         f' q z (x:xs) = f x (q z xs)
-        
+
 fib n = fix f n where
     f c 0 = 0
     f c 1 = 1
@@ -44,12 +57,12 @@ fib n = fix f n where
 -- dann als fixpunkt mit zusätzlichem ersten parameter,
 -- der an stelle des rekursiven Aufrufs benutzt wird.
 
-fibs, fibs' :: [Integer]
+fibs :: [Integer]
 fibs = 0 : 1 : zipWith (+) fibs (tail fibs)
 
 fibs2 = let z =    0:1:zipWith (+) z (tail z) in z
-fibs3 = let z =
-            (\q -> 0:1:zipWith (+) q (tail q)) z in z
+fibs3 = let
+        z = (\q -> 0:1:zipWith (+) q (tail q)) z in z
 fibs4 = fix (\q -> 0:1:zipWith (+) q (tail q))
 fibs5 = fix f where
             f q  = 0:1:zipWith (+) q (tail q)
