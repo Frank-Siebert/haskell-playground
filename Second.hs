@@ -187,3 +187,17 @@ minimum_alignment ul le up x1 y1 = let narf (v, ament) a@(x,y) = (v + charac x y
 al :: String -> String -> IO ()
 al x y = let (value, a) = ld0 x y
           in putStrLn $ show value ++ toString a
+
+generalizedLD :: (Ord r, Num r) => (a -> r) -> (b -> r) -> (a -> b -> r) -> [a] -> [b] -> r
+generalizedLD _ _ _ [] [] = 0
+generalizedLD deleteCost _ _ xs [] = sum $ map deleteCost xs
+generalizedLD _ insertCost _ [] ys = sum $ map insertCost ys
+generalizedLD deleteCost insertCost compareCost xs ys = go xs ys where
+    go aaa@(a:aa) bbb@(b:bb) = minimum -- must be 3 as and bs per line
+                 [deleteCost  a   + go aa  bbb,
+                  insertCost    b + go aaa bb ,
+                  compareCost a b + go aa  bb ]
+
+-- ghc fails if type for ld7 not given
+ld7 :: (Eq a) => [a] -> [a] -> Int
+ld7 = generalizedLD (const 1) (const 1) charac
