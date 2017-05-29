@@ -6,6 +6,7 @@ import Hashable
 import Data.Maybe (fromJust,fromMaybe)
 import Control.Monad (liftM)
 import System.CPUTime (getCPUTime)
+import System.Environment (getArgs)
 import Debug.Trace (trace,traceShow)
 
 time :: IO t -> IO t
@@ -104,9 +105,15 @@ ld6 x y = snd . last $ (ld6' x y)
 
 main :: IO ()
 main = do
-         putStrLn "Enter two strings, separated by [return]"
-         x <- getLine
-         y <- getLine                             -- ld2 broken!
+         args <- getArgs
+         [x,y] <- if length args /= 2
+           then do
+             putStrLn "Enter two strings, separated by [return]"
+             x <- getLine
+             y <- getLine                             -- ld2 broken!
+             return [x,y]
+           else
+             getArgs
          sequence_ [ time $ putStrLn ( show (ald x y)) | ald <-[ld3,ld,ld4,ld5,ld6,ld7]]
                                         
 output = zipWith (,) (ld4' "blah" "blub") (ld6' "blah" "blub")
