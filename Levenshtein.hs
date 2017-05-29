@@ -107,7 +107,7 @@ main = do
          putStrLn "Enter two strings, separated by [return]"
          x <- getLine
          y <- getLine                             -- ld2 broken!
-         sequence_ [ time $ putStrLn ( show (ald x y)) | ald <-[ld3,ld,ld4,ld5,ld6]]
+         sequence_ [ time $ putStrLn ( show (ald x y)) | ald <-[ld3,ld,ld4,ld5,ld6,ld7]]
                                         
 output = zipWith (,) (ld4' "blah" "blub") (ld6' "blah" "blub")
 
@@ -189,10 +189,10 @@ al x y = let (value, a) = ld0 x y
           in putStrLn $ show value ++ toString a
 
 generalizedLD :: (Ord r, Num r) => (a -> r) -> (b -> r) -> (a -> b -> r) -> [a] -> [b] -> r
-generalizedLD _ _ _ [] [] = 0
-generalizedLD deleteCost _ _ xs [] = sum $ map deleteCost xs
-generalizedLD _ insertCost _ [] ys = sum $ map insertCost ys
 generalizedLD deleteCost insertCost compareCost xs ys = go xs ys where
+    go [] [] = 0
+    go xs [] = sum $ map deleteCost xs
+    go [] ys = sum $ map insertCost ys
     go aaa@(a:aa) bbb@(b:bb) = minimum -- must be 3 as and bs per line
                  [deleteCost  a   + go aa  bbb,
                   insertCost    b + go aaa bb ,
