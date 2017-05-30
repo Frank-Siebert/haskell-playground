@@ -209,7 +209,7 @@ generalizedLD deleteCost insertCost compareCost xs ys = go xs ys where
 ld7 :: (Eq a) => [a] -> [a] -> Int
 ld7 = generalizedLD (const 1) (const 1) charac
 
-gld deleteCost insertCost compareCost xs ys =
-   wavefront 0 (\(x:_) v -> deleteCost x +v ) (\(y:_) v -> insertCost y + v) f xs ys
-     where f (x:_) (y:_) up le ul = minimum [up + deleteCost x,le + insertCost y,ul + compareCost x y]
+gld deleteCost insertCost compareCost =
+   wavefront 0 (\(x:_) v -> deleteCost x +v ) (\(y:_) v -> insertCost y + v)
+     (\(x:_) (y:_) up le ul -> minimum [up + deleteCost x,le + insertCost y,ul + compareCost x y])
 
