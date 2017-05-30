@@ -118,22 +118,22 @@ main = do
                                         
 output = zipWith (,) (ld4' "blah" "blub") (ld6' "blah" "blub")
 
-wavefront :: r -> ([a] -> r -> r) -> ([b] -> r -> r) -> ([a] -> [b] -> r -> r -> r -> r)-> [a] -> [b] -> r
+wavefront :: r -> (a -> r -> r) -> (b -> r -> r) -> (a -> b -> r -> r -> r -> r)-> [a] -> [b] -> r
 wavefront ul _  _  _ []       []       = ul
-wavefront ul dn ri f u@(_:us) []       = (wavefront (dn u ul) dn ri f us [])
-wavefront ul dn ri f []       v@(_:vs) = (wavefront (ri v ul) dn ri f [] vs)
-wavefront ul dn ri f u@(_:us) v@(_:vs) = f u v (wavefront ul dn ri f us v )
+wavefront ul dn ri f u@(a:us) []       = (wavefront (dn a ul) dn ri f us [])
+wavefront ul dn ri f []       v@(b:vs) = (wavefront (ri b ul) dn ri f [] vs)
+wavefront ul dn ri f u@(a:us) v@(b:vs) = f a b (wavefront ul dn ri f us v )
                                                (wavefront ul dn ri f u  vs)
                                                (wavefront ul dn ri f us vs)
 
 ldw :: (Eq a) => [a] -> [a] -> Int
 ldw = wavefront 0 (\_ r -> 1 + r) (\_ r -> 1 + r) 
-                  (\x y up le ul -> if head x == head y then ul
+                  (\x y up le ul -> if x == y then ul
                                       else 1 + minimum [up,le,ul])
                                       
 shuffle :: (Ord a) => [a] -> [a] -> [[a]]
-shuffle = wavefront [[]] (\(w:_) r -> (map (++[w])) r) (\(w:_) r -> map (++[w]) r)
- (\(u:_) (v:_) up le _ -> 
+shuffle = wavefront [[]] (\w -> map (++[w])) (\w -> map (++[w]))
+ (\u v up le _ ->
    liftM (u:) up   +-+
    map   (v:) le)
    
@@ -210,6 +210,6 @@ ld7 :: (Eq a) => [a] -> [a] -> Int
 ld7 = generalizedLD (const 1) (const 1) charac
 
 gld deleteCost insertCost compareCost =
-   wavefront 0 (\(x:_) v -> deleteCost x +v ) (\(y:_) v -> insertCost y + v)
-     (\(x:_) (y:_) up le ul -> minimum [up + deleteCost x,le + insertCost y,ul + compareCost x y])
+   wavefront 0 (\x v -> deleteCost x +v ) (\y v -> insertCost y + v)
+     (\x y up le ul -> minimum [up + deleteCost x,le + insertCost y,ul + compareCost x y])
 
