@@ -118,7 +118,7 @@ main = do
                                         
 output = zipWith (,) (ld4' "blah" "blub") (ld6' "blah" "blub")
 
-wavefront :: b -> ([a] -> b -> b) -> ([a] -> b -> b) -> ([a] -> [a] -> b -> b -> b -> b)-> [a] -> [a] -> b
+wavefront :: r -> ([a] -> r -> r) -> ([b] -> r -> r) -> ([a] -> [b] -> r -> r -> r -> r)-> [a] -> [b] -> r
 wavefront ul _  _  _ []       []       = ul
 wavefront ul dn ri f u@(_:us) []       = (dn u (wavefront ul dn ri f us []))
 wavefront ul dn ri f []       v@(_:vs) = (ri v (wavefront ul dn ri f [] vs))
