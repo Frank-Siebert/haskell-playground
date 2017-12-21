@@ -23,6 +23,16 @@ instance Monad (Cont r) where
     return = pure
     Cont x >>= f = Cont $ \c -> x $ \c' -> let Cont f' = f c' in f' c
 
+joinCont :: Cont r (Cont r a) -> Cont r a
+joinCont (Cont x) = Cont $ \c -> x $ undefined
+
+type FC r a = (a->r) -> r
+jc2 ::  (( ((a->r)->r)->r)->r)  -> ((a->r)->r)
+jc3 :: FC r (FC r a) -> FC r a
+--jc3 = jc3
+jc3 c f = c ($f)
+jc2 c f = c (\x-> x f)
+
 type Free f a = Cont (f a) a
 
 pair :: Cont r a -> Cont r (a,a)
@@ -57,8 +67,9 @@ instance (Traversable f) => Traversable (FreeMonad f) where
     traverse f (Impure x) = Impure <$> traverse (traverse f) x
 
 --deriving instance (Show a, Show (f (FreeMonad f a))) => Show (FreeMonad f a)
-
---data FreeFoldable a
+joinFree :: (Functor f) => FreeMonad f (FreeMonad f a) -> FreeMonad f a
+joinFree (Pure x)   = x
+joinFree (Impure x) = Impure $ fmap joinFree x
 
 step :: (Monad m) => FreeMonad m a -> m (Either a (FreeMonad m a))
 step (Pure x) = return $ Left x
