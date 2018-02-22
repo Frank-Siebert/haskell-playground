@@ -1,4 +1,4 @@
-data Unipair a = Unipair a a
+data Unipair a = Unipair a a deriving (Eq,Show,Read,Ord)
 type NowThen = Unipair
 
 instance Functor Unipair where
