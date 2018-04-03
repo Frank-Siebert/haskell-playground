@@ -6,6 +6,9 @@ data TimeVar e a = TV (e -> (a,TimeVar e a))
 --data TimeVar e a = TV (e -> (Either a e, TimeVar e a))
 --data TimeVar e a = TV (e -> (Maybe a, Maybe e, TimeVar e a))
 
+-- this is not a tick-based blah-foo!
+--data TV2 a = Source (a, TV2 a) | Sink (TV2 a)
+
 deriving instance Functor (TimeVar e)
 
 instance Applicative (TimeVar e) where
@@ -16,7 +19,18 @@ instance Applicative (TimeVar e) where
             (x',tvx) = x e
          in
             (f' x',tvf <*> tvx)
- 
+
+{-
+instance Monad (TimeVar e) where
+    return = pure
+    TV x >>= f = TV $ \e ->
+        let
+            (x',tvx) = x e
+            (y ,tvy) = f x'
+         in
+            (undefined, tvx >>= f)
+-}
+
 acc :: (a -> a) -> a -> TimeVar e a
 acc step init = TV $ \_ -> (init, acc step (step init))
 

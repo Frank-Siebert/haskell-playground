@@ -1,3 +1,8 @@
+-- needs infinite lists aka streams
+diag :: [[a]] -> [a]
+diag ((a:_):bs) = a:diag (map tail bs)
+
+
 -- takes base and number and produces base-adic list,
 -- e.g. toList 10 42 = [4,2]
 --      toList 2 14 = [1,1,1,0]
