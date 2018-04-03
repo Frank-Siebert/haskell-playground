@@ -2,6 +2,8 @@ import Control.Monad.Trans (MonadTrans, lift, MonadIO)
 import Control.Monad (liftM2)
 import Control.Applicative
 
+-- my attempts to record the actions of a monad led to the rediscovery of the free monad
+
 data Chain a = Chain String a deriving (Eq,Show)
 
 instance (Monad) (Chain) where
@@ -134,14 +136,3 @@ threads = [sequence_ [liftIO (putStrLn $ "Thread "++(c:" step "++ show n)) | n<-
 
 applThread :: Free IO ()
 applThread = lift (putStrLn "Hallo") *> lift (putStrLn "Welt")
-
-foo = do x <- [1..4]
-         y <- [2,3]
-         return x
-         return (x*y)
-
-fibs :: [Integer]
-fibs = 0:1:zipWith (+) fibs (tail fibs)
-
-x :: Int
-x = x + 1

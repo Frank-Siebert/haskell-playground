@@ -49,16 +49,3 @@ testTV (TV f) (e:es) = let (x,tv) = f e in x:testTV tv es
 
 parrot :: TimeVar e e
 parrot = TV (\e -> (e,parrot))
-
-data Refs s a = Refs (s -> (s,a))
-
-data Ref s a = Ref (s -> a)
-
-newRef :: a -> Refs s (Ref s a)
-newRef x = Refs $ \s -> (s,(Ref $ \s -> x))
-getRef :: Ref s a -> Refs s a
-getRef (Ref sf) = Refs $ \s -> (s, sf s)
-setRef :: Ref s a -> a -> Refs s ()
-setRef (Ref sf) v = Refs $ \s -> (s,())
-
-x = x + 1

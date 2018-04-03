@@ -1,12 +1,10 @@
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE RankNTypes #-}
+
 -- play around which defintions of unwrap and duplicate make lists a comonad
 import Data.List (tails,inits)
 import Data.CircList
 import Control.Comonad
-
--- does not work in ghci, but can be compiled by ghc with -XRankNTypes
-
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE RankNTypes #-}
 
 --test :: (Functor f, Eq (f a), Show (f a),Eq (f (f a)),Show (f (f a))) => 
 --        (f a -> a) -> (f b -> f (f b)) -> f a -> IO ()
@@ -32,7 +30,7 @@ checkEq :: (Eq a, Show a) => String -> a -> a -> IO ()
 checkEq msg a b = do
   putStrLn $ msg ++ if a == b
     then " ok"
-	else "! "++show a ++" /= "++show b
+    else "! "++show a ++" /= "++show b
   
 
 --main :: IO ()
@@ -43,7 +41,7 @@ main = do test head (init . tails) [1..4]
           test head (reverse . init . tails) [1..4]
           testCircList
 
-testCircList = let cl = mkCircList [(-1),(-2)..(-4)] 0 [1..4] in do
+testCircList = let cl = mkCircList [(-1),(-2)..(-4)] (0::Int) [1..4] in do
   testCm getHead duplicate cl
   testCm getHead (duplicate . reverseC) cl
   testCm getHead (reverseC . duplicate . reverseC) cl

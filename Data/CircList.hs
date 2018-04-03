@@ -17,7 +17,7 @@ import Prelude hiding (head)
 import Control.Comonad
 
 --
-data CircList a = C { getLeft :: [a], getHead :: a, getRight :: [a] }
+data CircList a = C { getLeft :: [a], getHead :: a, getRight :: [a] } deriving (Eq)
 -- internally normalized: rs==[] implies ls==[]
 -- this normalization is bullshit. It is fine if there is no central element.
 
