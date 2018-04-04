@@ -1,14 +1,19 @@
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
+
 -- various bits that I littered in other files.
 
 -- taken from wargame.hs. Mostly superseded by Unipair.
-data Timed a = Timed {curr :: a, prev :: a}
+data Timed a = Timed {curr :: a, prev :: a} deriving (Functor, Foldable)
 
 type Predicate a = a -> Bool
 
 type TimeStrat = Bool -> Bool -> Bool
 
-is :: TimeStrat -> Predicate a -> Timed a -> Bool
+is,is',is'' :: TimeStrat -> Predicate a -> Timed a -> Bool
 is ts pred timed = ts (pred . curr $ timed) (pred . prev $ timed)
+is' ts pred = (\(Timed x y) -> ts x y) . fmap pred
+is'' ts pred = foldr1 ts . fmap pred
 
 now :: TimeStrat
 now a _ = a
