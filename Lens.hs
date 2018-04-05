@@ -1,6 +1,6 @@
 {-# LANGUAGE Rank2Types #-}
 -- my lens playground
-import Control.Monad.State
+import Control.Monad.State(State,get,put,modify,runState)
 import Data.Functor.Constant
 import Data.Functor.Identity
 
@@ -31,6 +31,17 @@ bol :: Lens(MyData a b) (MyData a c) b c
 bol f (MyData x y) = MyData x <$> f y
 aol f (MyData x y) = flip MyData y <$> f x
 
+data Rigid = Rigid { _rigidInt::Int, _rigidString::String } deriving (Show,Read,Eq,Ord)
+rig = Rigid 1 "sample"
+
+rigidInt :: Lens' Rigid Int
+--rigidInt f (Rigid i s) = flip Rigid s <$> f i
+--rigidInt f (Rigid i s) = fmap (\x -> Rigid x s) (f i)
+rigidInt f (Rigid i s) = (\x -> Rigid x s) <$> f i
+
+rigidString :: Lens' Rigid String
+rigidString f (Rigid i s) = Rigid i <$> f s
+
 type Lens' s a = Lens s s a a
 
 data MyLens host val = MyLens (host -> val) (val -> host -> host)
@@ -38,9 +49,20 @@ data MyLens host val = MyLens (host -> val) (val -> host -> host)
 flat :: MyLens a a
 flat = MyLens id const
 
-(.^) :: host -> MyLens host val -> val
-h .^ (MyLens r _) = r h
+-- does not compile with type declaration
+--(.^) = flip originalLensGet
+(.^) :: host -> Lens host t val b -> val
+host .^ lens = originalLensGet lens host
 infixl 1 .^
+
+-- ($=), (.=) are not taken from originalLens, just offline guesses
+
+-- does not compile without type declaration
+(.=) :: s -> Lens s t a b -> b -> t
+(host .= lens) val = originalLensSet lens val host
+
+($=) :: Lens s t a b -> b -> s -> t
+lens $= val = originalLensSet lens val
 
 set :: MyLens h v -> v -> h -> h
 set (MyLens _ s) = s
