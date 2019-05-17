@@ -3,7 +3,7 @@
 data Term op n v = Lit n | Var v
               | Terms op [Term op n v] deriving Show
 
-data Operation  = UnNegate | UnAbs | UnSignum
+data Operation  = UnNegate | UnAbs | UnSignum | UnRecip
                 | MoSum | MoProduct
                 | BoDifference | BoQuotient deriving (Eq,Show)
 
@@ -12,14 +12,14 @@ isAssoc MoSum = True
 isAssoc MoProduct = True
 isAssoc _ = False
 
-opFunc :: (Num n) => Operation -> [n] -> n
+opFunc :: (Fractional n) => Operation -> [n] -> n
 opFunc UnNegate     = negate . head
 opFunc UnAbs        = abs . head
 opFunc UnSignum     = signum . head
 opFunc MoSum        = sum
 opFunc MoProduct    = product
 opFunc BoDifference = unc (-)
-opFunc BoQuotient   = undefined -- unc (/)
+opFunc BoQuotient   = unc (/)
 
 unc op [a,b] = a `op` b
 
@@ -33,6 +33,11 @@ instance Num n => Num (Term Operation n v) where
    a + b = Terms MoSum [a,b]
    a - b = Terms BoDifference [a,b]
    a * b = Terms MoProduct [a,b]
+
+instance Fractional n => Fractional (Term Operation n v) where
+   a / b = Terms BoQuotient [a,b]
+   recip a = Terms UnRecip [a]
+   fromRational a = Lit (fromRational a)
 
 x :: TermStdOp n String
 x = Var "x"
@@ -55,7 +60,7 @@ insertVar f (Var v) = f v
 insertVar f (Terms op terms) = Terms op (map (insertVar f) terms)
 insertVar _ (Lit n) = Lit n
 
-eval :: (Num n) => (v->n) -> Term Operation n v -> n
+eval :: (Fractional n) => (v->n) -> Term Operation n v -> n
 eval f (Var v) = f v
 eval _ (Lit n) = n
 eval f (Terms op terms) = opFunc op (map (eval f) terms)
