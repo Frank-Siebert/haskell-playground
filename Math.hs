@@ -12,6 +12,17 @@ isAssoc MoSum = True
 isAssoc MoProduct = True
 isAssoc _ = False
 
+opFunc :: (Num n) => Operation -> [n] -> n
+opFunc UnNegate     = negate . head
+opFunc UnAbs        = abs . head
+opFunc UnSignum     = signum . head
+opFunc MoSum        = sum
+opFunc MoProduct    = product
+opFunc BoDifference = unc (-)
+opFunc BoQuotient   = undefined -- unc (/)
+
+unc op [a,b] = a `op` b
+
 type TermStdOp = Term Operation
 
 instance Num n => Num (Term Operation n v) where
@@ -36,3 +47,15 @@ collectAssoc _ other = other
 
 takeVars :: Term op n v -> [v]
 takeVars (Var v) = [v]
+takeVars (Lit _) = []
+takeVars (Terms _ terms) = concat (map takeVars terms)
+
+insertVar :: (v -> Term op n w) -> Term op n v -> Term op n w
+insertVar f (Var v) = f v
+insertVar f (Terms op terms) = Terms op (map (insertVar f) terms)
+insertVar _ (Lit n) = Lit n
+
+eval :: (Num n) => (v->n) -> Term Operation n v -> n
+eval f (Var v) = f v
+eval _ (Lit n) = n
+eval f (Terms op terms) = opFunc op (map (eval f) terms)
