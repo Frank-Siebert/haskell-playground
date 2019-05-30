@@ -1,11 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveFunctor #-}
 
 data Term op n v = Lit n | Var v
-              | Terms op [Term op n v] deriving Show
+              | Terms op [Term op n v] deriving (Show,Functor)
 
 data Operation  = UnNegate | UnAbs | UnSignum | UnRecip
-                | MoSum | MoProduct
-                | BoDifference | BoQuotient deriving (Eq,Show)
+                | MoSum | BoDifference
+                | MoProduct | BoQuotient deriving (Eq,Show,Ord)
 
 isAssoc :: Operation -> Bool
 isAssoc MoSum = True
@@ -16,12 +17,16 @@ opFunc :: (Fractional n) => Operation -> [n] -> n
 opFunc UnNegate     = negate . head
 opFunc UnAbs        = abs . head
 opFunc UnSignum     = signum . head
+opFunc UnRecip      = recip . head
 opFunc MoSum        = sum
 opFunc MoProduct    = product
 opFunc BoDifference = unc (-)
 opFunc BoQuotient   = unc (/)
 
+
+unc :: (a -> a -> a) -> [a] -> a
 unc op [a,b] = a `op` b
+unc _  _     = error "unc: list should have exactly two arguments"
 
 type TermStdOp = Term Operation
 
@@ -60,7 +65,25 @@ insertVar f (Var v) = f v
 insertVar f (Terms op terms) = Terms op (map (insertVar f) terms)
 insertVar _ (Lit n) = Lit n
 
-eval :: (Fractional n) => (v->n) -> Term Operation n v -> n
+instance Applicative (Term op n) where
+   pure = Var
+   a <*> b = insertVar (\f -> insertVar (Var . f) b) a
+
+instance Monad (Term op n) where
+   return = pure
+   (>>=) = flip insertVar
+
+mapOperation :: (a -> b) -> Term a n v -> Term b n v
+mapOperation f t = go t where
+                   go (Terms a terms) = Terms (f a) (map go terms)
+                   go (Lit n) = Lit n
+                   go (Var v) = Var v
+
+eval :: (v->n) -> Term ([n] -> n) n v -> n
 eval f (Var v) = f v
 eval _ (Lit n) = n
-eval f (Terms op terms) = opFunc op (map (eval f) terms)
+eval f (Terms op terms) = op (map (eval f) terms)
+
+evalFractional :: (Fractional n) => (v->n) -> Term Operation n v -> n
+evalFractional f = eval f . mapOperation opFunc
+
