@@ -73,6 +73,20 @@ instance Monad (Term op n) where
    return = pure
    (>>=) = flip insertVar
 
+instance Foldable (Term op n) where
+   foldr f acc (Lit _) = acc
+   foldr f acc (Var x) = f x acc
+   foldr f acc (Terms _ []) = acc
+   foldr f acc (Terms op (x:xs)) = foldr f (foldr f acc x) (Terms op xs)
+   foldMap _ (Lit _) = mempty
+   foldMap f (Var x) = f x
+   foldMap f (Terms _ terms) = foldMap (foldMap f) terms
+
+instance Traversable (Term op n) where
+   traverse f (Lit n) = pure (Lit n)
+   traverse f (Var x) = Var <$> f x
+   traverse f (Terms op terms) =  Terms op <$> traverse (traverse f) terms
+
 mapOperation :: (a -> b) -> Term a n v -> Term b n v
 mapOperation f t = go t where
                    go (Terms a terms) = Terms (f a) (map go terms)
