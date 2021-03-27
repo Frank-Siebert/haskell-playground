@@ -28,7 +28,7 @@ right (One x) = x
 right (Two _ x) =x
 
 -- ...another goal was to generate examples.
-newtype StreamConsumer' f s a = StreamConsumer { runStreamConsumer :: [s] -> ([s],f a)} deriving Functor
+newtype StreamConsumer' f s a = StreamConsumer { runStreamConsumer :: s -> (s,f a)} deriving Functor
 type StreamConsumer = StreamConsumer' []
 
 -- don't know if I could just use the State Monad
@@ -46,10 +46,10 @@ instance (Alternative f) => Alternative (StreamConsumer' f s) where
             (s'',ys) = y s'
          in (s'',xs <|> ys)
 
-evalStreamConsumer :: [s] -> StreamConsumer s a -> [a]
+evalStreamConsumer :: s -> StreamConsumer s a -> [a]
 evalStreamConsumer s (StreamConsumer sc) = snd $ sc s
 
-pop :: StreamConsumer a a
+pop :: StreamConsumer [a] a
 pop = StreamConsumer $ \(x:xs) -> (xs,[x])
 
 scOneTwo :: StreamConsumer s a -> StreamConsumer s (OneTwo a)
@@ -59,10 +59,10 @@ ot3 :: [OneTwo (OneTwo (OneTwo Int))]
 ot3 = eval . scOneTwo . scOneTwo . scOneTwo $ pop
 
 -- helper for repl only
-eval :: StreamConsumer Int a -> [a]
+eval :: StreamConsumer [Int] a -> [a]
 eval = evalStreamConsumer [1..]
 
-consume :: (s -> [a]) -> StreamConsumer s a
+consume :: (s -> [a]) -> StreamConsumer [s] a
 consume f = StreamConsumer $ \(x:xs) -> (xs,f x)
 
 -- following functions were part of the journey / exploration.
