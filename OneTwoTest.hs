@@ -3,54 +3,8 @@
 
 import Control.Applicative
 import Control.Monad(join)
-
--- goal of this experiment was to show / check if OneTwo is a Monad and under which functions, and...
-data OneTwo a = One a | Two a a deriving (Show,Read,Eq,Functor)
-
-instance Foldable OneTwo where
-   foldr f i (One x) = f x i
-   foldr f i (Two x y) = f x . f y $ i
-instance Traversable OneTwo where
-   traverse f (One x) = One <$> f x
-   traverse f (Two x y) = Two <$> f x <*> f y
-instance Applicative OneTwo where
-   pure = One
-   One f <*> One x = One (f x)
-   otf   <*> otx   = Two (left otf $ left otx) (right otf $ right otx)
-instance Monad OneTwo where
-   One x >>= f = f x
-   Two x y >>= f = Two (left (f x)) (right (f y))
-
-left,right:: OneTwo a -> a
-left (One x) = x
-left (Two x _) = x
-right (One x) = x
-right (Two _ x) =x
-
--- ...another goal was to generate examples.
-newtype StreamConsumer' f s a = StreamConsumer { runStreamConsumer :: s -> (s,f a)} deriving Functor
-type StreamConsumer = StreamConsumer' []
-
--- don't know if I could just use the State Monad
-instance (Applicative f) => Applicative (StreamConsumer' f s) where
-    pure x = StreamConsumer $ \s -> (s,pure x)
-    StreamConsumer scf <*> StreamConsumer scx =
-             StreamConsumer $ \s -> let (s',f)  = scf s
-                                        (s'',x) = scx s'
-                                     in (s'',f <*> x)
-
-instance (Alternative f) => Alternative (StreamConsumer' f s) where
-    empty = StreamConsumer $ \s -> (s,empty)
-    StreamConsumer x <|> StreamConsumer y = StreamConsumer $ \s ->
-        let (s' ,xs) = x s
-            (s'',ys) = y s'
-         in (s'',xs <|> ys)
-
-evalStreamConsumer :: s -> StreamConsumer s a -> [a]
-evalStreamConsumer s (StreamConsumer sc) = snd $ sc s
-
-pop :: StreamConsumer [a] a
-pop = StreamConsumer $ \(x:xs) -> (xs,[x])
+import Control.StreamConsumer
+import Data.OneTwo
 
 scOneTwo :: StreamConsumer s a -> StreamConsumer s (OneTwo a)
 scOneTwo x = One <$> x <|> Two <$> x <*> x
