@@ -4,14 +4,11 @@ module Control.StreamConsumer
   , StreamConsumer
   , evalStreamConsumer
   , pop
-  , consume
   ) where
 
-import Control.Applicative
-import Control.Monad(join)
+import Control.Applicative(Alternative,empty,(<|>))
 
--- goal of this experiment was to show / check if OneTwo is a Monad and under which functions, and...
--- ...another goal was to generate examples.
+-- more a Generator than a consumer
 newtype StreamConsumer' f s a = StreamConsumer { runStreamConsumer :: s -> (s,f a)} deriving Functor
 type StreamConsumer = StreamConsumer' []
 
@@ -35,6 +32,3 @@ evalStreamConsumer s (StreamConsumer sc) = snd $ sc s
 
 pop :: StreamConsumer [a] a
 pop = StreamConsumer $ \(x:xs) -> (xs,[x])
-
-consume :: (s -> [a]) -> StreamConsumer [s] a
-consume f = StreamConsumer $ \(x:xs) -> (xs,f x)

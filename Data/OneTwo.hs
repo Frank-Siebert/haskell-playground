@@ -5,9 +5,8 @@ module Data.OneTwo
   , right
   , oneTwo
   ) where
-import Control.Applicative
 
--- goal of this experiment was to show / check if OneTwo is a Monad and under which functions, and...
+-- goal of this experiment was to show / check if OneTwo is a Monad and under which functions.
 data OneTwo a = One a | Two a a deriving (Show,Read,Eq,Functor)
 
 instance Foldable OneTwo where
