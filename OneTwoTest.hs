@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE RankNTypes #-}
 
-import Control.Applicative((<|>))
+import Control.Applicative(Alternative,(<|>))
 import Control.Monad(join)
 import Control.StreamConsumer
 import Data.OneTwo
@@ -9,13 +9,13 @@ import Data.OneTwo
 ot1 :: [OneTwo Int]
 ot1 = [One 1, Two 2 3]
 
-scOneTwo :: StreamConsumer s a -> StreamConsumer s (OneTwo a)
+scOneTwo :: (Alternative f) => StreamConsumer f s a -> StreamConsumer f s (OneTwo a)
 scOneTwo x = One <$> x <|> Two <$> x <*> x
 
 ot3 :: [OneTwo (OneTwo (OneTwo Int))]
 ot3 = eval . scOneTwo . scOneTwo . scOneTwo $ pop
 
-eval :: StreamConsumer [Int] a -> [a]
+eval :: StreamConsumer [] [Int] a -> [a]
 eval = evalStreamConsumer [1..]
 
 checkReturn :: (Eq (m a),Show (m a),Functor m) => (forall z. (z -> m z)) -> (m (m a) -> m a) -> [m a] -> [String]
